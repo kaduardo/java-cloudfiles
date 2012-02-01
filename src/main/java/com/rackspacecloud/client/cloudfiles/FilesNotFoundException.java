@@ -1,5 +1,5 @@
 /**
- * 
+ *
  */
 package com.rackspacecloud.client.cloudfiles;
 
@@ -8,12 +8,12 @@ import org.apache.http.StatusLine;
 
 /**
  * @author lvaughn
- *
  */
-public class FilesNotFoundException extends FilesException {
+public class FilesNotFoundException extends FilesException
+{
 
 	/**
-	 * 
+	 *
 	 */
 	private static final long serialVersionUID = 111718445621236026L;
 
@@ -23,7 +23,8 @@ public class FilesNotFoundException extends FilesException {
 	 * @param httpStatusLine
 	 */
 	public FilesNotFoundException(String message, Header[] httpHeaders,
-			StatusLine httpStatusLine) {
+								  StatusLine httpStatusLine)
+	{
 		super(message, httpHeaders, httpStatusLine);
 	}
 

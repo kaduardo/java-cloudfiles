@@ -1,6 +1,6 @@
 /*
  * See COPYING for license information.
- */ 
+ */
 
 package com.rackspacecloud.client.cloudfiles.sample;
 
@@ -16,9 +16,9 @@ public class FilesAuth
 			boolean success = client.login();
 			if (success)
 			{
-				System.out.println("username: "+client.getUserName());
-				System.out.println("url: "+client.getStorageURL());
-				System.out.println("token: "+client.getStorageToken());
+				System.out.println("username: " + client.getUserName());
+				System.out.println("url: " + client.getStorageURL());
+				System.out.println("token: " + client.getStorageToken());
 			}
 			else
 			{
