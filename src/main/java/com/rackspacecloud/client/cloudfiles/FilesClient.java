@@ -3050,6 +3050,9 @@ public class FilesClient
 						throw new FilesNotFoundException("Container: " + container + " did not have object " + objName,
 								response.getResponseHeaders(), response.getStatusLine());
 					}
+					else {
+						throw new FilesException(response.getStatusMessage(), response.getResponseHeaders(), response.getStatusLine());
+					}
 				}
 				finally
 				{
@@ -3072,7 +3075,6 @@ public class FilesClient
 		{
 			throw new FilesAuthorizationException("You must be logged in", null, null);
 		}
-		return null;
 	}
 
 	/**
@@ -3118,7 +3120,6 @@ public class FilesClient
 				if (response.getStatusCode() == HttpStatus.SC_OK)
 				{
 					logger.info("Object data retreived  : " + objName);
-					// DO NOT RELEASE THIS CONNECTION
 					return response.getResponseBodyAsStream();
 				}
 				else if (response.getStatusCode() == HttpStatus.SC_NOT_FOUND)
@@ -3126,6 +3127,10 @@ public class FilesClient
 					method.abort();
 					throw new FilesNotFoundException("Container: " + container + " did not have object " + objName,
 							response.getResponseHeaders(), response.getStatusLine());
+				}
+				else {
+					method.abort();
+					throw new FilesException(response.getStatusMessage(), response.getResponseHeaders(), response.getStatusLine());
 				}
 			}
 			else
@@ -3144,7 +3149,6 @@ public class FilesClient
 		{
 			throw new FilesAuthorizationException("You must be logged in", null, null);
 		}
-		return null;
 	}
 
 	public InputStream getObjectAsRangedStream(String container, String objName, long offset, long length) throws IOException, HttpException, FilesInvalidNameException, FilesNotFoundException
@@ -3176,10 +3180,9 @@ public class FilesClient
 					response = new FilesResponse(client.execute(method));
 				}
 
-				if (response.getStatusCode() == HttpStatus.SC_OK)
+				if (response.getStatusCode() == HttpStatus.SC_PARTIAL_CONTENT)
 				{
 					logger.info("Object data retreived  : " + objName);
-					// DO NOT RELEASE THIS CONNECTION
 					return response.getResponseBodyAsStream();
 				}
 				else if (response.getStatusCode() == HttpStatus.SC_NOT_FOUND)
@@ -3187,6 +3190,10 @@ public class FilesClient
 					method.abort();
 					throw new FilesNotFoundException("Container: " + container + " did not have object " + objName,
 							response.getResponseHeaders(), response.getStatusLine());
+				}
+				else {
+					method.abort();
+					throw new FilesException(response.getStatusMessage(), response.getResponseHeaders(), response.getStatusLine());
 				}
 			}
 			else
@@ -3205,7 +3212,6 @@ public class FilesClient
 		{
 			throw new FilesAuthorizationException("You must be logged in", null, null);
 		}
-		return null;
 	}
 
 
