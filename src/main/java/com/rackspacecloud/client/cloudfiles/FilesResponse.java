@@ -21,9 +21,6 @@ public class FilesResponse
 
     private static Logger logger = Logger.getLogger(FilesResponse.class);
 
-    /**
-     * @param method The HttpMethod that generated this response
-     */
     public FilesResponse (HttpResponse response)
     {
     	this.response = response;
@@ -32,9 +29,10 @@ public class FilesResponse
         {
      		logger.debug ("Status Line: " + getStatusLine());
 
-    		Header [] responseHeaders = getResponseHeaders();    
-    		for (int i=0; i < responseHeaders.length;i++)
-    			logger.debug(responseHeaders[i]);
+    		Header [] responseHeaders = getResponseHeaders();
+            for(Header responseHeader : responseHeaders) {
+                logger.debug(responseHeader);
+            }
         }
     }
 
@@ -72,7 +70,9 @@ public class FilesResponse
      */
     public String getStorageURL ()
     {
-       return getResponseHeader(FilesConstants.X_STORAGE_URL).getValue();
+        Header hdr = getResponseHeader(FilesConstants.X_STORAGE_URL);
+        if(null == hdr) return null;
+        return hdr.getValue();
     }
 
     /**
@@ -83,8 +83,9 @@ public class FilesResponse
      */
     public String getCDNManagementURL ()
     {
-    	Header header = getResponseHeader(FilesConstants.X_CDN_MANAGEMENT_URL);
-    	return header == null ? null : header.getValue();
+    	Header hdr = getResponseHeader(FilesConstants.X_CDN_MANAGEMENT_URL);
+        if(null == hdr) return null;
+        return hdr.getValue();
     }
 
     /**
@@ -94,7 +95,9 @@ public class FilesResponse
      */
     public String getContentType ()
     {
-       return getResponseHeader("Content-Type").getValue();
+        Header hdr = getResponseHeader("Content-Type");
+        if(null == hdr) return null;
+        return hdr.getValue();
     }
 
     /**
@@ -128,7 +131,9 @@ public class FilesResponse
      */
     public String getLastModified ()
     {
-       return getResponseHeader("Last-Modified").getValue(); 
+        Header hdr = getResponseHeader("Last-Modified");
+        if(null == hdr) return null;
+        return hdr.getValue();
     }
 
     /**
