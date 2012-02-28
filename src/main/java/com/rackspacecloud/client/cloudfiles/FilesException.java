@@ -51,7 +51,7 @@ public class FilesException extends HttpException
 		if (httpHeaders == null)
 			return "";
 
-		StringBuffer httpHeaderString = new StringBuffer();
+		StringBuilder httpHeaderString = new StringBuilder();
 		for (Header h : httpHeaders)
 			httpHeaderString.append(h.getName() + ": " + h.getValue() + "\n");
 
