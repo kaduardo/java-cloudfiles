@@ -4,27 +4,7 @@
 
 package com.rackspacecloud.client.cloudfiles;
 
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.math.BigInteger;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-
+import com.rackspacecloud.client.cloudfiles.wrapper.RequestEntityWrapper;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.EncoderException;
 import org.apache.commons.codec.net.URLCodec;
@@ -62,7 +42,23 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
-import com.rackspacecloud.client.cloudfiles.wrapper.RequestEntityWrapper;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.math.BigInteger;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * A client for Cloud Files.  Here follows a basic example of logging in, creating a container and an
@@ -119,7 +115,6 @@ public class FilesClient
 	private String storageURL = null;
 	private String cdnManagementURL = null;
 	private String authToken = null;
-	private boolean isLoggedin = false;
 	private boolean useETag = true;
 	private boolean snet = false;
 	private String snetAddr = "https://snet-";
@@ -132,7 +127,7 @@ public class FilesClient
 	 * @param client			The HttpClient to talk to Swift
 	 * @param username		  The username to log in to
 	 * @param password		  The password
-	 * @param authUrl
+	 * @param authUrl		   Authentication URL
 	 * @param account		   The Cloud Files account to use
 	 * @param connectionTimeOut The connection timeout, in ms.
 	 */
@@ -169,7 +164,7 @@ public class FilesClient
 	/**
 	 * @param username		  The username
 	 * @param password		  The API key
-	 * @param authUrl
+	 * @param authUrl		   Authentication URL
 	 * @param account		   The Cloud Files account to use
 	 * @param connectionTimeOut The connection timeout, in ms.
 	 */
@@ -194,7 +189,7 @@ public class FilesClient
 						new Scheme("http", 80, PlainSocketFactory.getSocketFactory()));
 				schemeRegistry.register(
 						new Scheme("https", 443, SSLSocketFactory.getSocketFactory()));
-				return new ThreadSafeClientConnManager(createHttpParams(), schemeRegistry);
+				return new ThreadSafeClientConnManager(schemeRegistry);
 			}
 		}, username, password, authUrl, account, connectionTimeOut);
 
@@ -206,7 +201,7 @@ public class FilesClient
 	 *
 	 * @param username The username
 	 * @param password The API key
-	 * @param authUrl
+	 * @param authUrl  Authentication URL
 	 */
 	public FilesClient(String username, String password, String authUrl)
 	{
@@ -222,8 +217,6 @@ public class FilesClient
 	public FilesClient(String username, String apiAccessKey)
 	{
 		this(username, apiAccessKey, null, null, FilesUtil.getIntProperty("connection_timeout"));
-		//lConnectionManagerogger.warn("LGV");
-		//logger.debug("LGV:" + client.getHttpConnectionManager()); 
 	}
 
 	/**
@@ -252,7 +245,7 @@ public class FilesClient
 	/**
 	 * Set the Account value and reassemble the Authentication URL.
 	 *
-	 * @param account
+	 * @param account Account name
 	 */
 	public void setAccount(String account)
 	{
@@ -276,6 +269,19 @@ public class FilesClient
 	 */
 	public boolean login() throws IOException, HttpException
 	{
+		try
+		{
+			this.authenticate();
+		}
+		catch (FilesAuthorizationException e)
+		{
+			return false;
+		}
+		return this.isLoggedin();
+	}
+
+	public void authenticate() throws IOException, HttpException
+	{
 		HttpGet method = new HttpGet(authenticationURL);
 		method.getParams().setIntParameter("http.socket.timeout", connectionTimeOut);
 
@@ -284,45 +290,49 @@ public class FilesClient
 		method.setHeader(FilesUtil.getProperty("auth_pass_header", FilesConstants.X_STORAGE_PASS_DEFAULT),
 				password);
 
-		FilesResponse response = new FilesResponse(client.execute(method));
-
-		if (response.loginSuccess())
+		try
 		{
-			isLoggedin = true;
-			if (usingSnet() || envSnet())
+			FilesResponse response = new FilesResponse(client.execute(method));
+			if (response.loginSuccess())
 			{
-				storageURL = snetAddr + response.getStorageURL().substring(8);
+				if (usingSnet() || envSnet())
+				{
+					storageURL = snetAddr + response.getStorageURL().substring(8);
+				}
+				else
+				{
+					storageURL = response.getStorageURL();
+				}
+				cdnManagementURL = response.getCDNManagementURL();
+				authToken = response.getAuthToken();
+				logger.debug("storageURL: " + storageURL);
+				logger.debug("authToken: " + authToken);
+				logger.debug("cdnManagementURL:" + cdnManagementURL);
+				logger.debug("ConnectionManager:" + client.getConnectionManager());
 			}
 			else
 			{
-				storageURL = response.getStorageURL();
+				throw new FilesAuthorizationException("Login failed", response.getResponseHeaders(), response.getStatusLine());
 			}
-			cdnManagementURL = response.getCDNManagementURL();
-			authToken = response.getAuthToken();
-			logger.debug("storageURL: " + storageURL);
-			logger.debug("authToken: " + authToken);
-			logger.debug("cdnManagementURL:" + cdnManagementURL);
-			logger.debug("ConnectionManager:" + client.getConnectionManager());
 		}
-		method.abort();
-
-		return this.isLoggedin;
+		finally
+		{
+			method.abort();
+		}
 	}
 
-
 	/**
-	 * Log in to CloudFiles.  This method performs the authentication and sets up the client's internal state.
+	 * Log in to CloudFiles.  This method performs no authentication but sets up the client's internal state.
 	 *
-	 * @param authToken
-	 * @param storageURL
-	 * @param cdnManagmentUrl
-	 * @return
+	 * @param authToken	   Token
+	 * @param storageURL	  Storage URL
+	 * @param cdnManagmentUrl CDN Mananagment URL
+	 * @return Always true
 	 * @throws IOException   There was an IO error doing network communication
 	 * @throws HttpException There was an error with the http protocol
 	 */
 	public boolean login(String authToken, String storageURL, String cdnManagmentUrl) throws IOException, HttpException
 	{
-		isLoggedin = true;
 		this.storageURL = storageURL;
 		this.cdnManagementURL = cdnManagmentUrl;
 		this.authToken = authToken;
@@ -339,7 +349,7 @@ public class FilesClient
 	 * @throws FilesException			  There was another error in the request to the server.
 	 * @throws FilesAuthorizationException The client's login was invalid.
 	 */
-	public List<FilesContainerInfo> listContainersInfo() throws IOException, HttpException, FilesException
+	public List<FilesContainerInfo> listContainersInfo() throws IOException, HttpException
 	{
 		return listContainersInfo(-1, null);
 	}
@@ -355,7 +365,7 @@ public class FilesClient
 	 * @throws FilesException			  There was another error in the request to the server.
 	 * @throws FilesAuthorizationException The client's login was invalid.
 	 */
-	public List<FilesContainerInfo> listContainersInfo(int limit) throws IOException, HttpException, FilesException
+	public List<FilesContainerInfo> listContainersInfo(int limit) throws IOException, HttpException
 	{
 		return listContainersInfo(limit, null);
 	}
@@ -372,7 +382,7 @@ public class FilesClient
 	 * @throws FilesException			  There was another error in the request to the server.
 	 * @throws FilesAuthorizationException The client's login was invalid.
 	 */
-	public List<FilesContainerInfo> listContainersInfo(int limit, String marker) throws IOException, HttpException, FilesException
+	public List<FilesContainerInfo> listContainersInfo(int limit, String marker) throws IOException, HttpException
 	{
 		if (!this.isLoggedin())
 		{
@@ -499,7 +509,7 @@ public class FilesClient
 	 * @throws FilesException			  There was another error in the request to the server.
 	 * @throws FilesAuthorizationException The client's login was invalid.
 	 */
-	public List<FilesContainer> listContainers() throws IOException, HttpException, FilesException
+	public List<FilesContainer> listContainers() throws IOException, HttpException
 	{
 		return listContainers(-1, null);
 	}
@@ -515,7 +525,7 @@ public class FilesClient
 	 * @throws FilesException			  There was another error in the request to the server.
 	 * @throws FilesAuthorizationException The client's login was invalid.
 	 */
-	public List<FilesContainer> listContainers(int limit) throws IOException, HttpException, FilesException
+	public List<FilesContainer> listContainers(int limit) throws IOException, HttpException
 	{
 		return listContainers(limit, null);
 	}
@@ -815,7 +825,6 @@ public class FilesClient
 	 * @param container The container name
 	 * @return A list of FilesObjects starting with the given string
 	 * @throws IOException				 There was an IO error doing network communication
-	 * @throws HttpException			   There was an error with the http protocol
 	 * @throws FilesException			  There was another error in the request to the server.
 	 * @throws FilesAuthorizationException The client's login was invalid.
 	 */
@@ -831,7 +840,6 @@ public class FilesClient
 	 * @param delimiter Use this argument as the delimiter that separates "directories"
 	 * @return A list of FilesObjects starting with the given string
 	 * @throws IOException				 There was an IO error doing network communication
-	 * @throws HttpException			   There was an error with the http protocol
 	 * @throws FilesException			  There was another error in the request to the server.
 	 * @throws FilesAuthorizationException The client's login was invalid.
 	 */
@@ -851,7 +859,7 @@ public class FilesClient
 	 * @throws FilesException			  There was another error in the request to the server.
 	 * @throws FilesAuthorizationException The client's login was invalid.
 	 */
-	public List<FilesObject> listObjects(String container, int limit) throws IOException, HttpException, FilesException
+	public List<FilesObject> listObjects(String container, int limit) throws IOException, HttpException
 	{
 		return listObjectsStartingWith(container, null, null, limit, null, null);
 	}
@@ -867,7 +875,7 @@ public class FilesClient
 	 * @throws FilesException			  There was another error in the request to the server.
 	 * @throws FilesAuthorizationException
 	 */
-	public List<FilesObject> listObjects(String container, String path) throws IOException, HttpException, FilesException
+	public List<FilesObject> listObjects(String container, String path) throws IOException, HttpException
 	{
 		return listObjectsStartingWith(container, null, path, -1, null, null);
 	}
@@ -884,7 +892,7 @@ public class FilesClient
 	 * @throws FilesException			  There was another error in the request to the server.
 	 * @throws FilesAuthorizationException
 	 */
-	public List<FilesObject> listObjects(String container, String path, Character delimiter) throws IOException, HttpException, FilesException
+	public List<FilesObject> listObjects(String container, String path, Character delimiter) throws IOException, HttpException
 	{
 		return listObjectsStartingWith(container, null, path, -1, null, delimiter);
 	}
@@ -901,7 +909,7 @@ public class FilesClient
 	 * @throws FilesException			  There was another error in the request to the server.
 	 * @throws FilesAuthorizationException The client's login was invalid.
 	 */
-	public List<FilesObject> listObjects(String container, String path, int limit) throws IOException, HttpException, FilesException
+	public List<FilesObject> listObjects(String container, String path, int limit) throws IOException, HttpException
 	{
 		return listObjectsStartingWith(container, null, path, limit, null);
 	}
@@ -919,7 +927,7 @@ public class FilesClient
 	 * @throws FilesException			  There was another error in the request to the server.
 	 * @throws FilesAuthorizationException
 	 */
-	public List<FilesObject> listObjects(String container, String path, int limit, String marker) throws IOException, HttpException, FilesException
+	public List<FilesObject> listObjects(String container, String path, int limit, String marker) throws IOException, HttpException
 	{
 		return listObjectsStartingWith(container, null, path, limit, marker);
 	}
@@ -936,7 +944,7 @@ public class FilesClient
 	 * @throws FilesException			  There was another error in the request to the server.
 	 * @throws FilesAuthorizationException The client's login was invalid.
 	 */
-	public List<FilesObject> listObjects(String container, int limit, String marker) throws IOException, HttpException, FilesException
+	public List<FilesObject> listObjects(String container, int limit, String marker) throws IOException, HttpException
 	{
 		return listObjectsStartingWith(container, null, null, limit, marker);
 	}
@@ -944,9 +952,8 @@ public class FilesClient
 	/**
 	 * Convenience method to test for the existence of a container in Cloud Files.
 	 *
-	 * @param container
+	 * @param container Container name
 	 * @return true if the container exists.  false otherwise.
-	 * @throws IOException
 	 * @throws IOException   There was an IO error doing network communication
 	 * @throws HttpException There was an error with the http protocol
 	 */
@@ -973,7 +980,7 @@ public class FilesClient
 	 * @throws FilesException			  There was another error in the request to the server.
 	 * @throws FilesAuthorizationException The client's login was invalid.
 	 */
-	public FilesAccountInfo getAccountInfo() throws IOException, HttpException, FilesException
+	public FilesAccountInfo getAccountInfo() throws IOException, HttpException
 	{
 		if (this.isLoggedin())
 		{
@@ -1106,7 +1113,7 @@ public class FilesClient
 	 * @throws FilesAuthorizationException The client was not property logged in
 	 * @throws FilesInvalidNameException   The container name was invalid
 	 */
-	public void createContainer(String name) throws IOException, HttpException, FilesException
+	public void createContainer(String name) throws IOException, HttpException
 	{
 		if (this.isLoggedin())
 		{
@@ -1169,7 +1176,7 @@ public class FilesClient
 	 * Deletes a container
 	 *
 	 * @param name The name of the container
-	 * @return
+	 * @return True if response code is 204
 	 * @throws IOException				 There was an IO error doing network communication
 	 * @throws HttpException			   There was an error with the http protocol
 	 * @throws FilesAuthorizationException The user is not Logged in
@@ -1178,7 +1185,7 @@ public class FilesClient
 	 * @throws FilesContainerNotEmptyException
 	 *                                     The container was not empty
 	 */
-	public boolean deleteContainer(String name) throws IOException, HttpException, FilesInvalidNameException, FilesNotFoundException, FilesContainerNotEmptyException
+	public boolean deleteContainer(String name) throws IOException, HttpException
 	{
 		if (this.isLoggedin())
 		{
@@ -1323,8 +1330,8 @@ public class FilesClient
 	 * @param name		 The name of the container to enable
 	 * @param ttl		  How long the CDN can use the content before checking for an update.  A negative value will result in this not being changed.
 	 * @param enabled	  True if this container should be accessible, false otherwise
-	 * @param referrerAcl
-	 * @param userAgentACL
+	 * @param referrerAcl  ACL
+	 * @param userAgentACL ACL
 	 * @param retainLogs   True if cdn access logs should be kept for this container, false otherwise
 	 * @return The CDN Url of the container
 	 * @throws IOException	There was an IO error doing network communication
@@ -1435,7 +1442,7 @@ public class FilesClient
 	/**
 	 * Gets current CDN sharing status of the container
 	 *
-	 * @param container
+	 * @param container Container
 	 * @return Information on the container
 	 * @throws IOException			There was an IO error doing network communication
 	 * @throws HttpException		  There was an error with the http protocol
@@ -1541,7 +1548,7 @@ public class FilesClient
 	/**
 	 * Gets current CDN sharing status of the container
 	 *
-	 * @param container
+	 * @param container Container name
 	 * @return Information on the container
 	 * @throws IOException			There was an IO error doing network communication
 	 * @throws HttpException		  There was an error with the http protocol
@@ -1755,10 +1762,7 @@ public class FilesClient
 					tokenize.setDelimiterString("\n");
 					String[] containers = tokenize.getTokenArray();
 					List<String> returnValue = new ArrayList<String>();
-					for (String containerName : containers)
-					{
-						returnValue.add(containerName);
-					}
+					Collections.addAll(returnValue, containers);
 					return returnValue;
 				}
 				else if (response.getStatusCode() == HttpStatus.SC_UNAUTHORIZED)
@@ -1794,12 +1798,8 @@ public class FilesClient
 	 * @throws FilesAuthorizationException Log in was not successful, or account is suspended
 	 * @throws FilesException			  Other error
 	 */
-	public void purgeCDNContainer(String container, String emailAddresses) throws IOException, HttpException, FilesException
+	public void purgeCDNContainer(String container, String emailAddresses) throws IOException, HttpException
 	{
-		if (!isLoggedin)
-		{
-			throw new FilesAuthorizationException("You must be logged in", null, null);
-		}
 		if (!isValidContainerName(container))
 		{
 			throw new FilesInvalidNameException(container);
@@ -1871,12 +1871,8 @@ public class FilesClient
 	 * @throws FilesAuthorizationException Log in was not successful, or account is suspended
 	 * @throws FilesException			  Other error
 	 */
-	public void purgeCDNObject(String container, String object, String emailAddresses) throws IOException, HttpException, FilesException
+	public void purgeCDNObject(String container, String object, String emailAddresses) throws IOException, HttpException
 	{
-		if (!isLoggedin)
-		{
-			throw new FilesAuthorizationException("You must be logged in", null, null);
-		}
 		if (!isValidContainerName(container))
 		{
 			throw new FilesInvalidNameException(container);
@@ -2128,7 +2124,7 @@ public class FilesClient
 	 * @param name		The name of the file on the server
 	 * @param manifest	Set manifest content here
 	 * @param callback	The object to which any callbacks will be sent (null if you don't want callbacks)
-	 * @return
+	 * @return True if response code is 201
 	 * @throws IOException	There was an IO error doing network communication
 	 * @throws HttpException  There was an error with the http protocol
 	 * @throws FilesException
@@ -2146,7 +2142,7 @@ public class FilesClient
 	 * @param name		The name of the file on the server
 	 * @param manifest	Set manifest content here
 	 * @param metadata	A map with the metadata as key names and values as the metadata values
-	 * @return
+	 * @return True if response code is 201
 	 * @throws IOException	There was an IO error doing network communication
 	 * @throws HttpException  There was an error with the http protocol
 	 * @throws FilesException
@@ -2165,7 +2161,7 @@ public class FilesClient
 	 * @param manifest	Set manifest content here
 	 * @param metadata	A map with the metadata as key names and values as the metadata values
 	 * @param callback	The object to which any callbacks will be sent (null if you don't want callbacks)
-	 * @return
+	 * @return True if response code is 201
 	 * @throws IOException	There was an IO error doing network communication
 	 * @throws HttpException  There was an error with the http protocol
 	 * @throws FilesException
@@ -2288,7 +2284,7 @@ public class FilesClient
 	 * @param obj		 The File containing the file to copy over
 	 * @param contentType The MIME type of the file
 	 * @param name		The name of the file on the server
-	 * @param callback
+	 * @param callback	Transfer callback
 	 * @return The ETAG if the save was successful, null otherwise
 	 * @throws IOException	There was an IO error doing network communication
 	 * @throws HttpException  There was an error with the http protocol
@@ -2325,8 +2321,7 @@ public class FilesClient
 	 * @param contentType The MIME type of the file
 	 * @param name		The name of the file on the server
 	 * @param metadata	A map with the metadata as key names and values as the metadata values
-	 * @param callback
-	 * @param metadata	The callback object that will be called as the data is sent
+	 * @param callback	Transfer callback
 	 * @return The ETAG if the save was successful, null otherwise
 	 * @throws IOException	There was an IO error doing network communication
 	 * @throws HttpException  There was an error with the http protocol
@@ -2455,7 +2450,7 @@ public class FilesClient
 	 * @param contentType The MIME type of the file
 	 * @param name		The name of the file on the server
 	 * @param metadata	A map with the metadata as key names and values as the metadata values
-	 * @return
+	 * @return True if response code is 201
 	 * @throws IOException	There was an IO error doing network communication
 	 * @throws HttpException  There was an error with the http protocol
 	 * @throws FilesException
@@ -2474,7 +2469,7 @@ public class FilesClient
 	 * @param name		The name of the file on the server
 	 * @param metadata	A map with the metadata as key names and values as the metadata values
 	 * @param callback	The object to which any callbacks will be sent (null if you don't want callbacks)
-	 * @return
+	 * @return True if response code is 201
 	 * @throws IOException	There was an IO error doing network communication
 	 * @throws HttpException  There was an error with the http protocol
 	 * @throws FilesException
@@ -2501,7 +2496,6 @@ public class FilesClient
 					method.setEntity(new RequestEntityWrapper(entity, callback));
 					for (String key : metadata.keySet())
 					{
-						// logger.warn("Key:" + key + ":" + sanitizeForURI(metadata.get(key)));
 						method.setHeader(FilesConstants.X_OBJECT_META + key, sanitizeForURI(metadata.get(key)));
 					}
 
@@ -2585,7 +2579,7 @@ public class FilesClient
 	 * @param contentType The MIME type of the file
 	 * @param name		The name of the file on the server
 	 * @param metadata	A map with the metadata as key names and values as the metadata values
-	 * @return
+	 * @return True if response code is 201
 	 * @throws IOException	There was an IO error doing network communication
 	 * @throws HttpException  There was an error with the http protocol
 	 * @throws FilesException
@@ -2741,7 +2735,7 @@ public class FilesClient
 	 * @param sourceObjName   of object to copy
 	 * @param destContainer   where object copy will be copied
 	 * @param destObjName	 of object copy
-	 * @return ETAG if successful, else null
+	 * @return ETag if successful, else null
 	 * @throws IOException	indicates a socket level error talking to CloudFiles
 	 * @throws HttpException  indicates a protocol level error talking to CloudFiles
 	 * @throws FilesException indicates an error talking to CloudFiles
@@ -2853,7 +2847,7 @@ public class FilesClient
 	 * @throws IOException			There was an IO error doing network communication
 	 * @throws HttpException		  There was an error with the http protocol
 	 * @throws FilesException
-	 * @throws FilesNotFoundException
+	 * @throws FilesNotFoundException The file was not found
 	 */
 	public void deleteObject(String container, String objName) throws IOException, HttpException
 	{
@@ -2925,12 +2919,12 @@ public class FilesClient
 	 * @param objName   The name of the object
 	 * @return The object's metadata
 	 * @throws IOException				 There was an IO error doing network communication
-	 * @throws HttpException			   There was an error with the http protocol
+	 * @throws HttpException			   There was an error with the HTTP protocol
 	 * @throws FilesAuthorizationException The Client's Login was invalid.
 	 * @throws FilesInvalidNameException   The container or object name was not valid
 	 * @throws FilesNotFoundException	  The file was not found
 	 */
-	public FilesObjectMetaData getObjectMetaData(String container, String objName) throws IOException, HttpException, FilesInvalidNameException
+	public FilesObjectMetaData getObjectMetaData(String container, String objName) throws IOException, HttpException
 	{
 		FilesObjectMetaData metaData;
 		if (this.isLoggedin())
@@ -3021,12 +3015,12 @@ public class FilesClient
 	 * @param objName   The name of the object
 	 * @return The content of the object
 	 * @throws IOException				 There was an IO error doing network communication
-	 * @throws HttpException			   There was an error with the http protocol
+	 * @throws HttpException			   There was an error with the HTTP protocol
 	 * @throws FilesAuthorizationException
-	 * @throws FilesInvalidNameException
-	 * @throws FilesNotFoundException
+	 * @throws FilesInvalidNameException   If container name or object name is invalid
+	 * @throws FilesNotFoundException	  The file was not found
 	 */
-	public byte[] getObject(String container, String objName) throws IOException, HttpException, FilesInvalidNameException, FilesNotFoundException
+	public byte[] getObject(String container, String objName) throws IOException, HttpException
 	{
 		if (this.isLoggedin())
 		{
@@ -3050,7 +3044,8 @@ public class FilesClient
 						throw new FilesNotFoundException("Container: " + container + " did not have object " + objName,
 								response.getResponseHeaders(), response.getStatusLine());
 					}
-					else {
+					else
+					{
 						throw new FilesException(response.getStatusMessage(), response.getResponseHeaders(), response.getStatusLine());
 					}
 				}
@@ -3084,12 +3079,12 @@ public class FilesClient
 	 * @param objName   The name of the object
 	 * @return An input stream that will give the objects content when read from.
 	 * @throws IOException				 There was an IO error doing network communication
-	 * @throws HttpException			   There was an error with the http protocol
+	 * @throws HttpException			   There was an error with the HTTP protocol
 	 * @throws FilesAuthorizationException
 	 * @throws FilesNotFoundException	  The container does not exist
-	 * @throws FilesInvalidNameException
+	 * @throws FilesInvalidNameException   If container name or object name is invalid
 	 */
-	public InputStream getObjectAsStream(String container, String objName) throws IOException, HttpException, FilesInvalidNameException, FilesNotFoundException
+	public InputStream getObjectAsStream(String container, String objName) throws IOException, HttpException
 	{
 		if (this.isLoggedin())
 		{
@@ -3128,7 +3123,8 @@ public class FilesClient
 					throw new FilesNotFoundException("Container: " + container + " did not have object " + objName,
 							response.getResponseHeaders(), response.getStatusLine());
 				}
-				else {
+				else
+				{
 					method.abort();
 					throw new FilesException(response.getStatusMessage(), response.getResponseHeaders(), response.getStatusLine());
 				}
@@ -3151,7 +3147,7 @@ public class FilesClient
 		}
 	}
 
-	public InputStream getObjectAsRangedStream(String container, String objName, long offset, long length) throws IOException, HttpException, FilesInvalidNameException, FilesNotFoundException
+	public InputStream getObjectAsRangedStream(String container, String objName, long offset, long length) throws IOException, HttpException
 	{
 		if (this.isLoggedin())
 		{
@@ -3191,7 +3187,8 @@ public class FilesClient
 					throw new FilesNotFoundException("Container: " + container + " did not have object " + objName,
 							response.getResponseHeaders(), response.getStatusLine());
 				}
-				else {
+				else
+				{
 					method.abort();
 					throw new FilesException(response.getStatusMessage(), response.getResponseHeaders(), response.getStatusLine());
 				}
@@ -3214,60 +3211,12 @@ public class FilesClient
 		}
 	}
 
-
-	/**
-	 * Utility function to write an InputStream to a file
-	 *
-	 * @param is
-	 * @param f
-	 * @throws IOException
-	 */
-	static void writeInputStreamToFile(InputStream is, File f) throws IOException
-	{
-		BufferedOutputStream bf = new BufferedOutputStream(new FileOutputStream(f));
-		byte[] buffer = new byte[1024];
-		int read = 0;
-
-		while ((read = is.read(buffer)) > 0)
-		{
-			bf.write(buffer, 0, read);
-		}
-
-		is.close();
-		bf.flush();
-		bf.close();
-	}
-
-	/**
-	 * Reads an input stream into a stream
-	 *
-	 * @param stream
-	 * @param encoding
-	 * @return The contents of the stream stored in a string.
-	 * @throws IOException
-	 */
-	static String inputStreamToString(InputStream stream, String encoding) throws IOException
-	{
-		char buffer[] = new char[4096];
-		StringBuilder sb = new StringBuilder();
-		InputStreamReader isr = new InputStreamReader(stream, "utf-8"); // For now, assume utf-8 to work around server bug
-
-		int nRead = 0;
-		while ((nRead = isr.read(buffer)) >= 0)
-		{
-			sb.append(buffer, 0, nRead);
-		}
-		isr.close();
-
-		return sb.toString();
-	}
-
 	/**
 	 * Calculates the MD5 checksum of a file, returned as a hex encoded string
 	 *
 	 * @param f The file
 	 * @return The MD5 checksum, as a base 16 encoded string
-	 * @throws IOException
+	 * @throws IOException Error reading file
 	 */
 	public static String md5Sum(File f) throws IOException
 	{
@@ -3277,7 +3226,7 @@ public class FilesClient
 			digest = MessageDigest.getInstance("MD5");
 			InputStream is = new FileInputStream(f);
 			byte[] buffer = new byte[1024];
-			int read = 0;
+			int read;
 
 			while ((read = is.read(buffer)) > 0)
 			{
@@ -3300,7 +3249,9 @@ public class FilesClient
 		catch (NoSuchAlgorithmException e)
 		{
 			logger.fatal("The JRE is misconfigured on this computer", e);
-			return null;
+			IOException io = new IOException(e.getMessage());
+			e.initCause(e);
+			throw io;
 		}
 	}
 
@@ -3309,7 +3260,7 @@ public class FilesClient
 	 *
 	 * @param data The data to checksum
 	 * @return The checksum, represented as a base 16 encoded string.
-	 * @throws IOException
+	 * @throws IOException Digest error
 	 */
 	public static String md5Sum(byte[] data) throws IOException
 	{
@@ -3327,10 +3278,12 @@ public class FilesClient
 			}
 			return md5;
 		}
-		catch (NoSuchAlgorithmException nsae)
+		catch (NoSuchAlgorithmException e)
 		{
-			logger.fatal("Major problems with your Java configuration", nsae);
-			return null;
+			logger.fatal("Major problems with your Java configuration", e);
+			IOException io = new IOException(e.getMessage());
+			e.initCause(e);
+			throw io;
 		}
 
 	}
@@ -3338,7 +3291,7 @@ public class FilesClient
 	/**
 	 * Encode any unicode characters that will cause us problems.
 	 *
-	 * @param str
+	 * @param str URI to encode
 	 * @return The string encoded for a URI
 	 */
 	public static String sanitizeForURI(String str)
@@ -3431,11 +3384,11 @@ public class FilesClient
 	 * Has this instance of the client authenticated itself?  Note, this does not mean that a call
 	 * right now will work, if the auth token has timed out, you will need to re-auth.
 	 *
-	 * @return True if we logged in, false otherwise.
+	 * @return True if authentication token is set
 	 */
 	public boolean isLoggedin()
 	{
-		return isLoggedin;
+		return authToken != null;
 	}
 
 	/**
@@ -3558,33 +3511,12 @@ public class FilesClient
 		return cdnManagementURL;
 	}
 
-
-	/**
-	 * @param container
-	 * @param object
-	 * @param manifest
-	 * @return
-	 * @throws FilesAuthorizationException
-	 * @throws org.apache.http.HttpException
-	 * @throws FilesInvalidNameException
-	 * @throws java.io.IOException
-	 */
 	public boolean updateObjectManifest(String container, String object, String manifest) throws
 			HttpException, IOException
 	{
 		return updateObjectMetadataAndManifest(container, object, new HashMap<String, String>(), manifest);
 	}
 
-	/**
-	 * @param container
-	 * @param object
-	 * @param metadata
-	 * @return
-	 * @throws org.apache.http.HttpException
-	 * @throws java.io.IOException
-	 * @throws FilesAuthorizationException
-	 * @throws FilesInvalidNameException
-	 */
 	public boolean updateObjectMetadata(String container, String object,
 										Map<String, String> metadata) throws
 			HttpException, IOException
@@ -3592,28 +3524,11 @@ public class FilesClient
 		return updateObjectMetadataAndManifest(container, object, metadata, null);
 	}
 
-	/**
-	 * @param container
-	 * @param object
-	 * @param metadata
-	 * @param manifest
-	 * @return
-	 * @throws java.io.IOException
-	 * @throws org.apache.http.HttpException
-	 * @throws FilesAuthorizationException
-	 * @throws FilesInvalidNameException
-	 */
 	public boolean updateObjectMetadataAndManifest(String container, String object,
 												   Map<String, String> metadata, String manifest) throws
 			HttpException, IOException
 	{
 		FilesResponse response;
-
-		if (!isLoggedin)
-		{
-			throw new FilesAuthorizationException("You must be logged in",
-					null, null);
-		}
 		if (!isValidContainerName(container))
 			throw new FilesInvalidNameException(container);
 		if (!isValidObjectName(object))
@@ -3673,27 +3588,6 @@ public class FilesClient
 		return base + "?" + URLEncodedUtils.format(parameters, "UTF-8");
 	}
 
-	/*
-		 * 
-		 *private void setQueryParameters(HttpRequestBase method, List<NameValuePair> parameters) throws FilesException{
-			URI oldURI = method.getURI();
-			try {
-				URI newURI = URIUtils.createURI(oldURI.getScheme(), oldURI.getHost(), -1, 
-						URLEncoder.encode(oldURI.getPath(), "UTF-8"), URLEncodedUtils.format(parameters, "UTF-8"), null);
-				logger.warn("Old Path: " + oldURI.getPath());
-				logger.warn("New URI: " + newURI);
-				method.setURI(newURI);
-			}
-			catch (UnsupportedEncodingException uee) {
-				logger.error("Somehow, we don't have UTF-8, this is quite a surprise", uee);
-				throw new FilesException("Somehow, we don't have UTF-8, this is quite a surprise", uee);
-			}
-			catch (URISyntaxException use) {
-				logger.error("Bad Syntax", use);
-				throw new FilesException("Bad URL Syntax", use);
-			}
-		}
-		*/
 	public void useSnet()
 	{
 		if (snet)
