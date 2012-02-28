@@ -45,11 +45,8 @@ public class FilesResponse
 	public boolean loginSuccess()
 	{
 		int statusCode = getStatusCode();
+		return statusCode >= 200 && statusCode < 300;
 
-		if (statusCode >= 200 && statusCode < 300)
-			return true;
-
-		return false;
 	}
 
 	/**
@@ -198,7 +195,7 @@ public class FilesResponse
 	 * Returns the response body as text
 	 *
 	 * @return The response body
-	 * @throws IOException
+	 * @throws IOException If an error occurs reading the input stream
 	 */
 	public String getResponseBodyAsString() throws IOException
 	{
@@ -209,7 +206,7 @@ public class FilesResponse
 	 * Get the response body as a Stream
 	 *
 	 * @return An input stream that will return the response body when read
-	 * @throws IOException
+	 * @throws IOException If an error occurs reading the input stream
 	 */
 	public InputStream getResponseBodyAsStream() throws IOException
 	{
@@ -220,7 +217,7 @@ public class FilesResponse
 	 * Get the body of the response as a byte array
 	 *
 	 * @return The body of the response.
-	 * @throws IOException
+	 * @throws IOException If an error occurs reading the input stream
 	 */
 	public byte[] getResponseBody() throws IOException
 	{
