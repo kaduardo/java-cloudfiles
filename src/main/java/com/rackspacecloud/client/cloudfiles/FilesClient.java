@@ -51,6 +51,8 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -147,7 +149,7 @@ public class FilesClient
 		}
 		else
 		{
-			this.authenticationURL = authUrl;
+			this.authenticationURL = this.parseURI(authUrl);
 		}
 		this.connectionTimeOut = connectionTimeOut;
 
@@ -301,9 +303,9 @@ public class FilesClient
 				}
 				else
 				{
-					storageURL = response.getStorageURL();
+					storageURL = this.parseURI(response.getStorageURL());
 				}
-				cdnManagementURL = response.getCDNManagementURL();
+				cdnManagementURL = this.parseURI(response.getCDNManagementURL());
 				authToken = response.getAuthToken();
 				logger.debug("storageURL: " + storageURL);
 				logger.debug("authToken: " + authToken);
@@ -318,6 +320,36 @@ public class FilesClient
 		finally
 		{
 			method.abort();
+		}
+	}
+
+	/**
+	 * Append default port if missing
+	 * @param url URL retrieved from service
+	 * @return URI with default port added.
+	 */
+	protected String parseURI(String url) {
+		final URI uri = URI.create(url);
+		try
+		{
+			int port = -1;
+			if(-1 == uri.getPort()) {
+				if(uri.getScheme().equals("http")) {
+					port = 80;
+				}
+				else if(uri.getScheme().equals("https")) {
+					port = 443;
+				}
+			}
+			else {
+				port = uri.getPort();
+			}
+			return new URI(uri.getScheme(), uri.getUserInfo(), uri.getHost(),
+					port, uri.getPath(), uri.getQuery(), uri.getFragment()).toString();
+		}
+		catch (URISyntaxException e)
+		{
+			return url;
 		}
 	}
 
@@ -562,7 +594,7 @@ public class FilesClient
 				parameters.add(new BasicNameValuePair("marker", marker));
 			}
 
-			String uri = parameters.size() > 0 ? makeURI(storageURL, parameters) : storageURL;
+			String uri = makeURI(storageURL, parameters);
 			method = new HttpGet(uri);
 			method.getParams().setIntParameter("http.socket.timeout", connectionTimeOut);
 			method.setHeader(FilesConstants.X_AUTH_TOKEN, authToken);
@@ -690,7 +722,7 @@ public class FilesClient
 				parameters.add(new BasicNameValuePair("delimiter", delimiter.toString()));
 			}
 
-			String uri = parameters.size() > 0 ? makeURI(storageURL + "/" + sanitizeForURI(container), parameters) : storageURL;
+			String uri = makeURI(storageURL + "/" + sanitizeForURI(container), parameters);
 			method = new HttpGet(uri);
 			method.getParams().setIntParameter("http.socket.timeout", connectionTimeOut);
 			method.setHeader(FilesConstants.X_AUTH_TOKEN, authToken);
@@ -1734,7 +1766,7 @@ public class FilesClient
 				{
 					params.add(new BasicNameValuePair("marker", marker));
 				}
-				String uri = (params.size() > 0) ? makeURI(cdnManagementURL, params) : cdnManagementURL;
+				String uri = makeURI(cdnManagementURL, params);
 				method = new HttpGet(uri);
 				method.getParams().setIntParameter("http.socket.timeout", connectionTimeOut);
 				method.setHeader(FilesConstants.X_AUTH_TOKEN, authToken);
@@ -1987,7 +2019,7 @@ public class FilesClient
 				{
 					params.add(new BasicNameValuePair("marker", marker));
 				}
-				String uri = params.size() > 0 ? makeURI(cdnManagementURL, params) : cdnManagementURL;
+				String uri = makeURI(cdnManagementURL, params);
 				method = new HttpGet(uri);
 				method.getParams().setIntParameter("http.socket.timeout", connectionTimeOut);
 				method.setHeader(FilesConstants.X_AUTH_TOKEN, authToken);
@@ -3585,7 +3617,10 @@ public class FilesClient
 
 	private String makeURI(String base, List<NameValuePair> parameters)
 	{
-		return base + "?" + URLEncodedUtils.format(parameters, "UTF-8");
+        if(parameters.isEmpty()) {
+            return base;
+        }
+		return String.format("%s?%s", base, URLEncodedUtils.format(parameters, "UTF-8"));
 	}
 
 	public void useSnet()

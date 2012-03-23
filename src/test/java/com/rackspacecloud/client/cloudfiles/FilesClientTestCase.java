@@ -2016,6 +2016,13 @@ public class FilesClientTestCase extends TestCase {
 			fail(e.getMessage());
 		} 
 	}
+
+	public void testParseURLs() {
+		FilesClient client = new FilesClient();
+		assertEquals("https://storage101.dfw1.clouddrive.com:443/v1/MossoCloudFS_5911445490-c679-46c3-bf62-9d7c3d5176ee",
+				client.parseURI("https://storage101.dfw1.clouddrive.com/v1/MossoCloudFS_5911445490-c679-46c3-bf62-9d7c3d5176ee"));
+		assertEquals("http://c314535.r35.cf1.rackcdn.com:80", client.parseURI("http://c314535.r35.cf1.rackcdn.com"));
+	}
 	
 	// Fun utilities
 	private String createTempContainerName(String addition) {
