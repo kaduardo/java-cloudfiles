@@ -35,7 +35,9 @@ import com.rackspacecloud.client.cloudfiles.IFilesTransferCallback;
 
 
 import junit.framework.TestCase;
+import org.junit.Ignore;
 
+@Ignore
 public class SnetFilesClientTestCase extends TestCase {
     private static Logger logger = Logger.getLogger(FilesClientTestCase.class);
 	private static File SYSTEM_TMP = SystemUtils.getJavaIoTmpDir();

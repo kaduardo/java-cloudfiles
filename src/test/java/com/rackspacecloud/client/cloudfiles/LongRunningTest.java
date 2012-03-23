@@ -4,11 +4,13 @@
 package com.rackspacecloud.client.cloudfiles;
 
 import com.rackspacecloud.client.cloudfiles.FilesClient;
+import org.junit.Ignore;
 
 /**
  * @author lvaughn
  *
  */
+@Ignore
 public class LongRunningTest {
 
 	/**
