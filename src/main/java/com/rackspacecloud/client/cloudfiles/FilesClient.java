@@ -329,6 +329,9 @@ public class FilesClient
 	 * @return URI with default port added.
 	 */
 	protected String parseURI(String url) {
+        if(null == url) {
+            return null;
+        }
 		final URI uri = URI.create(url);
 		try
 		{
