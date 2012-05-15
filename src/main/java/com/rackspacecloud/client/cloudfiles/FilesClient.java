@@ -642,7 +642,7 @@ public class FilesClient
 			}
 			else
 			{
-				throw new FilesException("Unexpected resposne from server", response.getResponseHeaders(), response.getStatusLine());
+				throw new FilesException("Unexpected response from server", response.getResponseHeaders(), response.getStatusLine());
 			}
 		}
 		catch (Exception ex)
@@ -845,7 +845,7 @@ public class FilesClient
 		catch (Exception ex)
 		{
 			logger.error("Error parsing xml", ex);
-			throw new FilesException("Error parsing server resposne", ex);
+			throw new FilesException("Error parsing server response", ex);
 		}
 		finally
 		{
