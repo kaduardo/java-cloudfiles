@@ -523,11 +523,13 @@ public class FilesClient
 				throw new FilesException("Unexpected Return Code", response.getResponseHeaders(), response.getStatusLine());
 			}
 		}
-		catch (Exception ex)
-		{
-			throw new FilesException("Unexpected problem, probably in parsing Server XML", ex);
-		}
-		finally
+        catch(ParserConfigurationException e) {
+            throw new FilesException("Parser configuration failure", e);
+        }
+        catch(SAXException e) {
+            throw new FilesException("Error parsing XML server response", e);
+        }
+        finally
 		{
 			if (method != null)
 				method.abort();
@@ -645,11 +647,6 @@ public class FilesClient
 				throw new FilesException("Unexpected response from server", response.getResponseHeaders(), response.getStatusLine());
 			}
 		}
-		catch (Exception ex)
-		{
-			ex.printStackTrace();
-			throw new FilesException("Unexpected error, probably parsing Server XML", ex);
-		}
 		finally
 		{
 			if (method != null)
@@ -670,7 +667,7 @@ public class FilesClient
 	 * @throws FilesException			  There was another error in the request to the server.
 	 * @throws FilesAuthorizationException The client's login was invalid.
 	 */
-	public List<FilesObject> listObjectsStartingWith(String container, String startsWith, String path, int limit, String marker) throws IOException, FilesException
+	public List<FilesObject> listObjectsStartingWith(String container, String startsWith, String path, int limit, String marker) throws IOException, HttpException
 	{
 		return listObjectsStartingWith(container, startsWith, path, limit, marker, null);
 	}
@@ -689,7 +686,7 @@ public class FilesClient
 	 * @throws FilesException			  There was another error in the request to the server.
 	 * @throws FilesAuthorizationException The client's login was invalid.
 	 */
-	public List<FilesObject> listObjectsStartingWith(String container, String startsWith, String path, int limit, String marker, Character delimiter) throws IOException, FilesException
+	public List<FilesObject> listObjectsStartingWith(String container, String startsWith, String path, int limit, String marker, Character delimiter) throws IOException, HttpException
 	{
 		if (!this.isLoggedin())
 		{
@@ -838,16 +835,13 @@ public class FilesClient
 				throw new FilesException("Unexpected Server Result", response.getResponseHeaders(), response.getStatusLine());
 			}
 		}
-		catch (FilesNotFoundException fnfe)
-		{
-			throw fnfe;
-		}
-		catch (Exception ex)
-		{
-			logger.error("Error parsing xml", ex);
-			throw new FilesException("Error parsing server response", ex);
-		}
-		finally
+        catch(ParserConfigurationException e) {
+            throw new FilesException("Parser configuration failure", e);
+        }
+        catch(SAXException e) {
+            throw new FilesException("Error parsing XML server response", e);
+        }
+        finally
 		{
 			if (method != null)
 				method.abort();
@@ -863,7 +857,7 @@ public class FilesClient
 	 * @throws FilesException			  There was another error in the request to the server.
 	 * @throws FilesAuthorizationException The client's login was invalid.
 	 */
-	public List<FilesObject> listObjects(String container) throws IOException, FilesException
+	public List<FilesObject> listObjects(String container) throws IOException, HttpException
 	{
 		return listObjectsStartingWith(container, null, null, -1, null, null);
 	}
@@ -878,7 +872,7 @@ public class FilesClient
 	 * @throws FilesException			  There was another error in the request to the server.
 	 * @throws FilesAuthorizationException The client's login was invalid.
 	 */
-	public List<FilesObject> listObjects(String container, Character delimiter) throws IOException, FilesException
+	public List<FilesObject> listObjects(String container, Character delimiter) throws IOException, HttpException
 	{
 		return listObjectsStartingWith(container, null, null, -1, null, delimiter);
 	}
