@@ -72,7 +72,7 @@ public class FilesContainer
 	 * @throws FilesAuthorizationException
 	 * @throws FilesInvalidNameException
 	 */
-	public List<FilesObject> getObjects() throws IOException, FilesAuthorizationException, FilesException
+	public List<FilesObject> getObjects() throws IOException, HttpException
 	{
 
 		if (client != null)
@@ -100,7 +100,7 @@ public class FilesContainer
 	 * @throws FilesAuthorizationException
 	 * @throws FilesInvalidNameException
 	 */
-	public List<FilesObject> getObjects(String path) throws HttpException, IOException, FilesAuthorizationException, FilesException
+	public List<FilesObject> getObjects(String path) throws HttpException, IOException, FilesException
 	{
 
 		if (client != null)
@@ -126,8 +126,7 @@ public class FilesContainer
 	 * @throws IOException	There was a problem communicating with the server
 	 * @throws FilesException
 	 */
-	public FilesContainerInfo getInfo() throws HttpException, IOException, FilesException
-	{
+	public FilesContainerInfo getInfo() throws HttpException, IOException {
 		if (client != null)
 		{
 			return client.getContainerInfo(this.name);
@@ -160,7 +159,7 @@ public class FilesContainer
 	 * @throws FilesAuthorizationException
 	 * @throws FilesInvalidNameException
 	 */
-	public boolean addObject(File f, String mimeType) throws NoSuchAlgorithmException, IOException, FilesAuthorizationException, FilesException
+	public boolean addObject(File f, String mimeType) throws NoSuchAlgorithmException, IOException, HttpException
 	{
 		FilesObject obj = new FilesObject(f, mimeType, this);
 
@@ -185,7 +184,7 @@ public class FilesContainer
 	 * @throws FilesAuthorizationException
 	 * @throws FilesInvalidNameException
 	 */
-	public void createContainer() throws HttpException, IOException, FilesAuthorizationException, FilesException
+	public void createContainer() throws HttpException, IOException, FilesException
 	{
 		if (client != null)
 		{
