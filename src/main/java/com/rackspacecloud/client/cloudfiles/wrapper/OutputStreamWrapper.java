@@ -14,7 +14,7 @@ import com.rackspacecloud.client.cloudfiles.IFilesTransferCallback;
 public class OutputStreamWrapper extends OutputStream
 {
 	private OutputStream stream;
-	private IFilesTransferCallback callback = null;
+	private IFilesTransferCallback callback;
 	private final static int callbackInterval = 1024 * 8;
 	private long lastCallback = 0;
 	private long bytesTransfered = 0;

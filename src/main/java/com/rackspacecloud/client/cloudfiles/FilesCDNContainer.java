@@ -13,8 +13,8 @@ public class FilesCDNContainer
 	private String referrerACL;
 	private int ttl;
 	private String cdnURL;
-	private String sslURL = null;
-	private String streamingURL = null;
+	private String sslURL;
+	private String streamingURL;
 	private String name;
 	private boolean retainLogs;
 
@@ -106,7 +106,7 @@ public class FilesCDNContainer
 	}
 
 	/**
-	 * @param refererACL the refererACL to set
+	 * @param referrerACL the refererACL to set
 	 */
 	public void setReferrerACL(String referrerACL)
 	{
@@ -186,7 +186,7 @@ public class FilesCDNContainer
 	}
 
 	/**
-	 * @param sstreamingURL the streamingURL to set
+	 * @param streamingURL the streamingURL to set
 	 */
 	void setStreamingURL(String streamingURL)
 	{

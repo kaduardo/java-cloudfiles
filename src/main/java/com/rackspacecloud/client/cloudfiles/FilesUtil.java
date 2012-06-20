@@ -49,7 +49,7 @@ public class FilesUtil
 	/**
 	 * Loads properties from input stream.
 	 *
-	 * @param io
+	 * @param io Stream
 	 * @throws IOException
 	 */
 	public static void loadProperties(final InputStream io) throws IOException
@@ -112,7 +112,7 @@ public class FilesUtil
 	/**
 	 * Looks up the value of a key from the properties file and converts it to an integer.
 	 *
-	 * @param key
+	 * @param key Property
 	 * @return The value of that key
 	 */
 	public static int getIntProperty(final String key)

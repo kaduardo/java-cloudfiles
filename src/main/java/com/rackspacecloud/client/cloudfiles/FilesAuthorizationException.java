@@ -9,9 +9,6 @@ import org.apache.http.StatusLine;
 
 public class FilesAuthorizationException extends FilesException
 {
-	/**
-	 *
-	 */
 	private static final long serialVersionUID = -3142674319839157198L;
 
 	/**
@@ -25,5 +22,4 @@ public class FilesAuthorizationException extends FilesException
 	{
 		super(message, httpHeaders, httpStatusLine);
 	}
-
 }

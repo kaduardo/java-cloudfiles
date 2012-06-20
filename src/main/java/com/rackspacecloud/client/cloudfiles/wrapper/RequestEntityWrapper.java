@@ -108,5 +108,4 @@ public class RequestEntityWrapper implements HttpEntity
 		entity.writeTo(new OutputStreamWrapper(os, callback));
 
 	}
-
 }

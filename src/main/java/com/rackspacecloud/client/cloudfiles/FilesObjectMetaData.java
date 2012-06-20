@@ -32,20 +32,6 @@ public class FilesObjectMetaData
 	}
 
 	/**
-	 * An object storing the metadata for an FS Cloud object
-	 *
-	 * @param mimeType	  The MIME type for the object
-	 * @param contentLength The content-length (e.g., size) of the object
-	 * @param lastModified  The last time the object was modified.
-	 */
-	public FilesObjectMetaData(String mimeType, String contentLength, String lastModified)
-	{
-		this.mimeType = mimeType;
-		this.contentLength = contentLength;
-		this.lastModified = lastModified;
-	}
-
-	/**
 	 * The last time the object was modified
 	 *
 	 * @return The last modification date
@@ -76,7 +62,7 @@ public class FilesObjectMetaData
 	/**
 	 * Set's the MIME type of the object
 	 *
-	 * @param mimeType
+	 * @param mimeType Content MIME type
 	 */
 	void setMimeType(String mimeType)
 	{

@@ -10,7 +10,6 @@ import org.apache.http.HttpException;
 /**
  * @author lvaughn
  */
-@SuppressWarnings("serial")
 public class FilesException extends HttpException
 {
 	private Header[] httpHeaders;
@@ -53,7 +52,7 @@ public class FilesException extends HttpException
 
 		StringBuilder httpHeaderString = new StringBuilder();
 		for (Header h : httpHeaders)
-			httpHeaderString.append(h.getName() + ": " + h.getValue() + "\n");
+			httpHeaderString.append(h.getName()).append(": ").append(h.getValue()).append("\n");
 
 		return httpHeaderString.toString();
 	}

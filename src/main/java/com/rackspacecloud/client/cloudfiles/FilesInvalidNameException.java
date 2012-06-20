@@ -17,5 +17,4 @@ public class FilesInvalidNameException extends FilesException
 	{
 		super("Invalid name: " + name, null, null);
 	}
-
 }
