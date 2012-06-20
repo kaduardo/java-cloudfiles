@@ -98,12 +98,6 @@ import java.util.Map;
  * </pre>
  *
  * @author lvaughn
- * @see com.rackspacecloud.client.cloudfiles.sample.FilesCli
- * @see com.rackspacecloud.client.cloudfiles.sample.FilesAuth
- * @see com.rackspacecloud.client.cloudfiles.sample.FilesCopy
- * @see com.rackspacecloud.client.cloudfiles.sample.FilesList
- * @see com.rackspacecloud.client.cloudfiles.sample.FilesRemove
- * @see com.rackspacecloud.client.cloudfiles.sample.FilesMakeContainer
  */
 public class FilesClient
 {
@@ -284,13 +278,13 @@ public class FilesClient
 
 	public void authenticate() throws IOException, HttpException
 	{
-		HttpGet method = new HttpGet(authenticationURL);
-		method.getParams().setIntParameter("http.socket.timeout", connectionTimeOut);
+		HttpGet method = new HttpGet(this.getAuthenticationURL());
+		method.getParams().setIntParameter("http.socket.timeout", this.getConnectionTimeOut());
 
 		method.setHeader(FilesUtil.getProperty("auth_user_header", FilesConstants.X_STORAGE_USER_DEFAULT),
-				username);
+				this.getUserName());
 		method.setHeader(FilesUtil.getProperty("auth_pass_header", FilesConstants.X_STORAGE_PASS_DEFAULT),
-				password);
+				this.getPassword());
 
 		try
 		{
@@ -436,10 +430,10 @@ public class FilesClient
 				parameters.add(new BasicNameValuePair("marker", marker));
 			}
 			parameters.add(new BasicNameValuePair("format", "xml"));
-			String uri = makeURI(storageURL, parameters);
+			String uri = makeURI(this.getStorageURL(), parameters);
 			method = new HttpGet(uri);
-			method.getParams().setIntParameter("http.socket.timeout", connectionTimeOut);
-			method.setHeader(FilesConstants.X_AUTH_TOKEN, authToken);
+			method.getParams().setIntParameter("http.socket.timeout", this.getConnectionTimeOut());
+			method.setHeader(FilesConstants.X_AUTH_TOKEN, this.getAuthToken());
 			FilesResponse response = new FilesResponse(client.execute(method));
 
 			if (response.getStatusCode() == HttpStatus.SC_UNAUTHORIZED)
@@ -448,8 +442,8 @@ public class FilesClient
 				if (login())
 				{
 					method = new HttpGet(uri);
-					method.getParams().setIntParameter("http.socket.timeout", connectionTimeOut);
-					method.setHeader(FilesConstants.X_AUTH_TOKEN, authToken);
+					method.getParams().setIntParameter("http.socket.timeout", this.getConnectionTimeOut());
+					method.setHeader(FilesConstants.X_AUTH_TOKEN, this.getAuthToken());
 					response = new FilesResponse(client.execute(method));
 				}
 				else
@@ -599,10 +593,10 @@ public class FilesClient
 				parameters.add(new BasicNameValuePair("marker", marker));
 			}
 
-			String uri = makeURI(storageURL, parameters);
+			String uri = makeURI(this.getStorageURL(), parameters);
 			method = new HttpGet(uri);
-			method.getParams().setIntParameter("http.socket.timeout", connectionTimeOut);
-			method.setHeader(FilesConstants.X_AUTH_TOKEN, authToken);
+			method.getParams().setIntParameter("http.socket.timeout", this.getConnectionTimeOut());
+			method.setHeader(FilesConstants.X_AUTH_TOKEN, this.getAuthToken());
 			FilesResponse response = new FilesResponse(client.execute(method));
 
 			if (response.getStatusCode() == HttpStatus.SC_UNAUTHORIZED)
@@ -611,8 +605,8 @@ public class FilesClient
 				if (login())
 				{
 					method = new HttpGet(uri);
-					method.getParams().setIntParameter("http.socket.timeout", connectionTimeOut);
-					method.setHeader(FilesConstants.X_AUTH_TOKEN, authToken);
+					method.getParams().setIntParameter("http.socket.timeout", this.getConnectionTimeOut());
+					method.setHeader(FilesConstants.X_AUTH_TOKEN, this.getAuthToken());
 					response = new FilesResponse(client.execute(method));
 				}
 				else
@@ -722,10 +716,10 @@ public class FilesClient
 				parameters.add(new BasicNameValuePair("delimiter", delimiter.toString()));
 			}
 
-			String uri = makeURI(storageURL + "/" + sanitizeForURI(container), parameters);
+			String uri = makeURI(this.getStorageURL() + "/" + sanitizeForURI(container), parameters);
 			method = new HttpGet(uri);
-			method.getParams().setIntParameter("http.socket.timeout", connectionTimeOut);
-			method.setHeader(FilesConstants.X_AUTH_TOKEN, authToken);
+			method.getParams().setIntParameter("http.socket.timeout", this.getConnectionTimeOut());
+			method.setHeader(FilesConstants.X_AUTH_TOKEN, this.getAuthToken());
 			FilesResponse response = new FilesResponse(client.execute(method));
 
 			if (response.getStatusCode() == HttpStatus.SC_UNAUTHORIZED)
@@ -734,8 +728,8 @@ public class FilesClient
 				if (login())
 				{
 					method = new HttpGet(uri);
-					method.getParams().setIntParameter("http.socket.timeout", connectionTimeOut);
-					method.setHeader(FilesConstants.X_AUTH_TOKEN, authToken);
+					method.getParams().setIntParameter("http.socket.timeout", this.getConnectionTimeOut());
+					method.setHeader(FilesConstants.X_AUTH_TOKEN, this.getAuthToken());
 					response = new FilesResponse(client.execute(method));
 				}
 				else
@@ -1017,9 +1011,9 @@ public class FilesClient
 
 			try
 			{
-				method = new HttpHead(storageURL);
-				method.getParams().setIntParameter("http.socket.timeout", connectionTimeOut);
-				method.setHeader(FilesConstants.X_AUTH_TOKEN, authToken);
+				method = new HttpHead(this.getStorageURL());
+				method.getParams().setIntParameter("http.socket.timeout", this.getConnectionTimeOut());
+				method.setHeader(FilesConstants.X_AUTH_TOKEN, this.getAuthToken());
 				FilesResponse response = new FilesResponse(client.execute(method));
 				if (response.getStatusCode() == HttpStatus.SC_UNAUTHORIZED)
 				{
@@ -1027,9 +1021,9 @@ public class FilesClient
 					if (login())
 					{
 						method.abort();
-						method = new HttpHead(storageURL);
-						method.getParams().setIntParameter("http.socket.timeout", connectionTimeOut);
-						method.setHeader(FilesConstants.X_AUTH_TOKEN, authToken);
+						method = new HttpHead(this.getStorageURL());
+						method.getParams().setIntParameter("http.socket.timeout", this.getConnectionTimeOut());
+						method.setHeader(FilesConstants.X_AUTH_TOKEN, this.getAuthToken());
 						response = new FilesResponse(client.execute(method));
 					}
 					else
@@ -1081,9 +1075,9 @@ public class FilesClient
 				HttpHead method = null;
 				try
 				{
-					method = new HttpHead(storageURL + "/" + sanitizeForURI(container));
-					method.getParams().setIntParameter("http.socket.timeout", connectionTimeOut);
-					method.setHeader(FilesConstants.X_AUTH_TOKEN, authToken);
+					method = new HttpHead(this.getStorageURL() + "/" + sanitizeForURI(container));
+					method.getParams().setIntParameter("http.socket.timeout", this.getConnectionTimeOut());
+					method.setHeader(FilesConstants.X_AUTH_TOKEN, this.getAuthToken());
 					FilesResponse response = new FilesResponse(client.execute(method));
 
 					if (response.getStatusCode() == HttpStatus.SC_UNAUTHORIZED)
@@ -1091,9 +1085,9 @@ public class FilesClient
 						method.removeHeaders(FilesConstants.X_AUTH_TOKEN);
 						if (login())
 						{
-							method = new HttpHead(storageURL + "/" + sanitizeForURI(container));
-							method.getParams().setIntParameter("http.socket.timeout", connectionTimeOut);
-							method.setHeader(FilesConstants.X_AUTH_TOKEN, authToken);
+							method = new HttpHead(this.getStorageURL() + "/" + sanitizeForURI(container));
+							method.getParams().setIntParameter("http.socket.timeout", this.getConnectionTimeOut());
+							method.setHeader(FilesConstants.X_AUTH_TOKEN, this.getAuthToken());
 							response = new FilesResponse(client.execute(method));
 						}
 						else
@@ -1148,9 +1142,9 @@ public class FilesClient
 		{
 			if (isValidContainerName(name))
 			{
-				HttpPut method = new HttpPut(storageURL + "/" + sanitizeForURI(name));
-				method.getParams().setIntParameter("http.socket.timeout", connectionTimeOut);
-				method.setHeader(FilesConstants.X_AUTH_TOKEN, authToken);
+				HttpPut method = new HttpPut(this.getStorageURL() + "/" + sanitizeForURI(name));
+				method.getParams().setIntParameter("http.socket.timeout", this.getConnectionTimeOut());
+				method.setHeader(FilesConstants.X_AUTH_TOKEN, this.getAuthToken());
 
 				try
 				{
@@ -1161,9 +1155,9 @@ public class FilesClient
 						method.abort();
 						if (login())
 						{
-							method = new HttpPut(storageURL + "/" + sanitizeForURI(name));
-							method.getParams().setIntParameter("http.socket.timeout", connectionTimeOut);
-							method.setHeader(FilesConstants.X_AUTH_TOKEN, authToken);
+							method = new HttpPut(this.getStorageURL() + "/" + sanitizeForURI(name));
+							method.getParams().setIntParameter("http.socket.timeout", this.getConnectionTimeOut());
+							method.setHeader(FilesConstants.X_AUTH_TOKEN, this.getAuthToken());
 							response = new FilesResponse(client.execute(method));
 						}
 						else
@@ -1220,11 +1214,11 @@ public class FilesClient
 		{
 			if (isValidContainerName(name))
 			{
-				HttpDelete method = new HttpDelete(storageURL + "/" + sanitizeForURI(name));
+				HttpDelete method = new HttpDelete(this.getStorageURL() + "/" + sanitizeForURI(name));
 				try
 				{
-					method.getParams().setIntParameter("http.socket.timeout", connectionTimeOut);
-					method.setHeader(FilesConstants.X_AUTH_TOKEN, authToken);
+					method.getParams().setIntParameter("http.socket.timeout", this.getConnectionTimeOut());
+					method.setHeader(FilesConstants.X_AUTH_TOKEN, this.getAuthToken());
 					FilesResponse response = new FilesResponse(client.execute(method));
 
 					if (response.getStatusCode() == HttpStatus.SC_UNAUTHORIZED)
@@ -1232,9 +1226,9 @@ public class FilesClient
 						method.abort();
 						if (login())
 						{
-							method = new HttpDelete(storageURL + "/" + sanitizeForURI(name));
-							method.getParams().setIntParameter("http.socket.timeout", connectionTimeOut);
-							method.setHeader(FilesConstants.X_AUTH_TOKEN, authToken);
+							method = new HttpDelete(this.getStorageURL() + "/" + sanitizeForURI(name));
+							method.getParams().setIntParameter("http.socket.timeout", this.getConnectionTimeOut());
+							method.setHeader(FilesConstants.X_AUTH_TOKEN, this.getAuthToken());
 							response = new FilesResponse(client.execute(method));
 						}
 						else
@@ -1295,9 +1289,9 @@ public class FilesClient
 				HttpPut method = null;
 				try
 				{
-					method = new HttpPut(cdnManagementURL + "/" + sanitizeForURI(name));
-					method.getParams().setIntParameter("http.socket.timeout", connectionTimeOut);
-					method.setHeader(FilesConstants.X_AUTH_TOKEN, authToken);
+					method = new HttpPut(this.getCdnManagementURL() + "/" + sanitizeForURI(name));
+					method.getParams().setIntParameter("http.socket.timeout", this.getConnectionTimeOut());
+					method.setHeader(FilesConstants.X_AUTH_TOKEN, this.getAuthToken());
 					FilesResponse response = new FilesResponse(client.execute(method));
 
 					if (response.getStatusCode() == HttpStatus.SC_UNAUTHORIZED)
@@ -1305,9 +1299,9 @@ public class FilesClient
 						method.abort();
 						if (login())
 						{
-							method = new HttpPut(cdnManagementURL + "/" + sanitizeForURI(name));
-							method.getParams().setIntParameter("http.socket.timeout", connectionTimeOut);
-							method.setHeader(FilesConstants.X_AUTH_TOKEN, authToken);
+							method = new HttpPut(this.getCdnManagementURL() + "/" + sanitizeForURI(name));
+							method.getParams().setIntParameter("http.socket.timeout", this.getConnectionTimeOut());
+							method.setHeader(FilesConstants.X_AUTH_TOKEN, this.getAuthToken());
 							response = new FilesResponse(client.execute(method));
 						}
 						else
@@ -1382,10 +1376,10 @@ public class FilesClient
 				HttpPost method = null;
 				try
 				{
-					method = new HttpPost(cdnManagementURL + "/" + sanitizeForURI(name));
+					method = new HttpPost(this.getCdnManagementURL() + "/" + sanitizeForURI(name));
 
-					method.getParams().setIntParameter("http.socket.timeout", connectionTimeOut);
-					method.setHeader(FilesConstants.X_AUTH_TOKEN, authToken);
+					method.getParams().setIntParameter("http.socket.timeout", this.getConnectionTimeOut());
+					method.setHeader(FilesConstants.X_AUTH_TOKEN, this.getAuthToken());
 					// TTL
 					if (ttl > 0)
 					{
@@ -1415,9 +1409,9 @@ public class FilesClient
 						method.abort();
 						if (login())
 						{
-							new HttpPost(cdnManagementURL + "/" + sanitizeForURI(name));
-							method.getParams().setIntParameter("http.socket.timeout", connectionTimeOut);
-							method.setHeader(FilesConstants.X_AUTH_TOKEN, authToken);
+							new HttpPost(this.getCdnManagementURL() + "/" + sanitizeForURI(name));
+							method.getParams().setIntParameter("http.socket.timeout", this.getConnectionTimeOut());
+							method.setHeader(FilesConstants.X_AUTH_TOKEN, this.getAuthToken());
 							// TTL
 							if (ttl > 0)
 							{
@@ -1487,9 +1481,9 @@ public class FilesClient
 				HttpHead method = null;
 				try
 				{
-					method = new HttpHead(cdnManagementURL + "/" + sanitizeForURI(container));
-					method.getParams().setIntParameter("http.socket.timeout", connectionTimeOut);
-					method.setHeader(FilesConstants.X_AUTH_TOKEN, authToken);
+					method = new HttpHead(this.getCdnManagementURL() + "/" + sanitizeForURI(container));
+					method.getParams().setIntParameter("http.socket.timeout", this.getConnectionTimeOut());
+					method.setHeader(FilesConstants.X_AUTH_TOKEN, this.getAuthToken());
 					FilesResponse response = new FilesResponse(client.execute(method));
 
 					if (response.getStatusCode() == HttpStatus.SC_UNAUTHORIZED)
@@ -1497,9 +1491,9 @@ public class FilesClient
 						method.abort();
 						if (login())
 						{
-							method = new HttpHead(cdnManagementURL + "/" + sanitizeForURI(container));
-							method.getParams().setIntParameter("http.socket.timeout", connectionTimeOut);
-							method.setHeader(FilesConstants.X_AUTH_TOKEN, authToken);
+							method = new HttpHead(this.getCdnManagementURL() + "/" + sanitizeForURI(container));
+							method.getParams().setIntParameter("http.socket.timeout", this.getConnectionTimeOut());
+							method.setHeader(FilesConstants.X_AUTH_TOKEN, this.getAuthToken());
 							response = new FilesResponse(client.execute(method));
 						}
 						else
@@ -1593,9 +1587,9 @@ public class FilesClient
 				HttpHead method = null;
 				try
 				{
-					method = new HttpHead(cdnManagementURL + "/" + sanitizeForURI(container));
-					method.getParams().setIntParameter("http.socket.timeout", connectionTimeOut);
-					method.setHeader(FilesConstants.X_AUTH_TOKEN, authToken);
+					method = new HttpHead(this.getCdnManagementURL() + "/" + sanitizeForURI(container));
+					method.getParams().setIntParameter("http.socket.timeout", this.getConnectionTimeOut());
+					method.setHeader(FilesConstants.X_AUTH_TOKEN, this.getAuthToken());
 					FilesResponse response = new FilesResponse(client.execute(method));
 
 					if (response.getStatusCode() == HttpStatus.SC_UNAUTHORIZED)
@@ -1603,9 +1597,9 @@ public class FilesClient
 						method.abort();
 						if (login())
 						{
-							method = new HttpHead(cdnManagementURL + "/" + sanitizeForURI(container));
-							method.getParams().setIntParameter("http.socket.timeout", connectionTimeOut);
-							method.setHeader(FilesConstants.X_AUTH_TOKEN, authToken);
+							method = new HttpHead(this.getCdnManagementURL() + "/" + sanitizeForURI(container));
+							method.getParams().setIntParameter("http.socket.timeout", this.getConnectionTimeOut());
+							method.setHeader(FilesConstants.X_AUTH_TOKEN, this.getAuthToken());
 							response = new FilesResponse(client.execute(method));
 						}
 						else
@@ -1763,10 +1757,10 @@ public class FilesClient
 				{
 					params.add(new BasicNameValuePair("marker", marker));
 				}
-				String uri = makeURI(cdnManagementURL, params);
+				String uri = makeURI(this.getCdnManagementURL(), params);
 				method = new HttpGet(uri);
-				method.getParams().setIntParameter("http.socket.timeout", connectionTimeOut);
-				method.setHeader(FilesConstants.X_AUTH_TOKEN, authToken);
+				method.getParams().setIntParameter("http.socket.timeout", this.getConnectionTimeOut());
+				method.setHeader(FilesConstants.X_AUTH_TOKEN, this.getAuthToken());
 				FilesResponse response = new FilesResponse(client.execute(method));
 
 				if (response.getStatusCode() == HttpStatus.SC_UNAUTHORIZED)
@@ -1775,8 +1769,8 @@ public class FilesClient
 					if (login())
 					{
 						method = new HttpGet(uri);
-						method.getParams().setIntParameter("http.socket.timeout", connectionTimeOut);
-						method.setHeader(FilesConstants.X_AUTH_TOKEN, authToken);
+						method.getParams().setIntParameter("http.socket.timeout", this.getConnectionTimeOut());
+						method.setHeader(FilesConstants.X_AUTH_TOKEN, this.getAuthToken());
 						response = new FilesResponse(client.execute(method));
 					}
 					else
@@ -1836,10 +1830,10 @@ public class FilesClient
 		HttpDelete method = null;
 		try
 		{
-			String deleteUri = cdnManagementURL + "/" + sanitizeForURI(container);
+			String deleteUri = this.getCdnManagementURL() + "/" + sanitizeForURI(container);
 			method = new HttpDelete(deleteUri);
-			method.getParams().setIntParameter("http.socket.timeout", connectionTimeOut);
-			method.setHeader(FilesConstants.X_AUTH_TOKEN, authToken);
+			method.getParams().setIntParameter("http.socket.timeout", this.getConnectionTimeOut());
+			method.setHeader(FilesConstants.X_AUTH_TOKEN, this.getAuthToken());
 			if (emailAddresses != null)
 			{
 				method.setHeader(FilesConstants.X_PURGE_EMAIL, emailAddresses);
@@ -1853,8 +1847,8 @@ public class FilesClient
 				if (login())
 				{
 					method = new HttpDelete(deleteUri);
-					method.getParams().setIntParameter("http.socket.timeout", connectionTimeOut);
-					method.setHeader(FilesConstants.X_AUTH_TOKEN, authToken);
+					method.getParams().setIntParameter("http.socket.timeout", this.getConnectionTimeOut());
+					method.setHeader(FilesConstants.X_AUTH_TOKEN, this.getAuthToken());
 					if (emailAddresses != null)
 					{
 						method.setHeader(FilesConstants.X_PURGE_EMAIL, emailAddresses);
@@ -1909,10 +1903,10 @@ public class FilesClient
 		HttpDelete method = null;
 		try
 		{
-			String deleteUri = cdnManagementURL + "/" + sanitizeForURI(container) + "/" + sanitizeAndPreserveSlashes(object);
+			String deleteUri = this.getCdnManagementURL() + "/" + sanitizeForURI(container) + "/" + sanitizeAndPreserveSlashes(object);
 			method = new HttpDelete(deleteUri);
-			method.getParams().setIntParameter("http.socket.timeout", connectionTimeOut);
-			method.setHeader(FilesConstants.X_AUTH_TOKEN, authToken);
+			method.getParams().setIntParameter("http.socket.timeout", this.getConnectionTimeOut());
+			method.setHeader(FilesConstants.X_AUTH_TOKEN, this.getAuthToken());
 			if (emailAddresses != null)
 			{
 				method.setHeader(FilesConstants.X_PURGE_EMAIL, emailAddresses);
@@ -1926,8 +1920,8 @@ public class FilesClient
 				if (login())
 				{
 					method = new HttpDelete(deleteUri);
-					method.getParams().setIntParameter("http.socket.timeout", connectionTimeOut);
-					method.setHeader(FilesConstants.X_AUTH_TOKEN, authToken);
+					method.getParams().setIntParameter("http.socket.timeout", this.getConnectionTimeOut());
+					method.setHeader(FilesConstants.X_AUTH_TOKEN, this.getAuthToken());
 					if (emailAddresses != null)
 					{
 						method.setHeader(FilesConstants.X_PURGE_EMAIL, emailAddresses);
@@ -2016,10 +2010,10 @@ public class FilesClient
 				{
 					params.add(new BasicNameValuePair("marker", marker));
 				}
-				String uri = makeURI(cdnManagementURL, params);
+				String uri = makeURI(this.getCdnManagementURL(), params);
 				method = new HttpGet(uri);
-				method.getParams().setIntParameter("http.socket.timeout", connectionTimeOut);
-				method.setHeader(FilesConstants.X_AUTH_TOKEN, authToken);
+				method.getParams().setIntParameter("http.socket.timeout", this.getConnectionTimeOut());
+				method.setHeader(FilesConstants.X_AUTH_TOKEN, this.getAuthToken());
 
 				FilesResponse response = new FilesResponse(client.execute(method));
 
@@ -2029,8 +2023,8 @@ public class FilesClient
 					if (login())
 					{
 						method = new HttpGet(uri);
-						method.getParams().setIntParameter("http.socket.timeout", connectionTimeOut);
-						method.setHeader(FilesConstants.X_AUTH_TOKEN, authToken);
+						method.getParams().setIntParameter("http.socket.timeout", this.getConnectionTimeOut());
+						method.setHeader(FilesConstants.X_AUTH_TOKEN, this.getAuthToken());
 
 						response = new FilesResponse(client.execute(method));
 					}
@@ -2206,9 +2200,9 @@ public class FilesClient
 				HttpPut method = null;
 				try
 				{
-					method = new HttpPut(storageURL + "/" + sanitizeForURI(container) + "/" + sanitizeForURI(name));
-					method.getParams().setIntParameter("http.socket.timeout", connectionTimeOut);
-					method.setHeader(FilesConstants.X_AUTH_TOKEN, authToken);
+					method = new HttpPut(this.getStorageURL() + "/" + sanitizeForURI(container) + "/" + sanitizeForURI(name));
+					method.getParams().setIntParameter("http.socket.timeout", this.getConnectionTimeOut());
+					method.setHeader(FilesConstants.X_AUTH_TOKEN, this.getAuthToken());
 					method.setHeader(FilesConstants.MANIFEST_HEADER, manifest);
 					ByteArrayEntity entity = new ByteArrayEntity(arr);
 					entity.setContentType(contentType);
@@ -2226,9 +2220,9 @@ public class FilesClient
 						method.abort();
 						if (login())
 						{
-							method = new HttpPut(storageURL + "/" + sanitizeForURI(container) + "/" + sanitizeForURI(name));
-							method.getParams().setIntParameter("http.socket.timeout", connectionTimeOut);
-							method.setHeader(FilesConstants.X_AUTH_TOKEN, authToken);
+							method = new HttpPut(this.getStorageURL() + "/" + sanitizeForURI(container) + "/" + sanitizeForURI(name));
+							method.getParams().setIntParameter("http.socket.timeout", this.getConnectionTimeOut());
+							method.setHeader(FilesConstants.X_AUTH_TOKEN, this.getAuthToken());
 							if (manifest != null)
 							{
 								method.setHeader(FilesConstants.MANIFEST_HEADER, manifest);
@@ -2375,9 +2369,9 @@ public class FilesClient
 				HttpPut method = null;
 				try
 				{
-					method = new HttpPut(storageURL + "/" + sanitizeForURI(container) + "/" + sanitizeForURI(name));
-					method.getParams().setIntParameter("http.socket.timeout", connectionTimeOut);
-					method.setHeader(FilesConstants.X_AUTH_TOKEN, authToken);
+					method = new HttpPut(this.getStorageURL() + "/" + sanitizeForURI(container) + "/" + sanitizeForURI(name));
+					method.getParams().setIntParameter("http.socket.timeout", this.getConnectionTimeOut());
+					method.setHeader(FilesConstants.X_AUTH_TOKEN, this.getAuthToken());
 					if (useETag)
 					{
 						method.setHeader(FilesConstants.E_TAG, md5Sum(obj));
@@ -2394,9 +2388,9 @@ public class FilesClient
 						method.abort();
 						if (login())
 						{
-							method = new HttpPut(storageURL + "/" + sanitizeForURI(container) + "/" + sanitizeForURI(name));
-							method.getParams().setIntParameter("http.socket.timeout", connectionTimeOut);
-							method.setHeader(FilesConstants.X_AUTH_TOKEN, authToken);
+							method = new HttpPut(this.getStorageURL() + "/" + sanitizeForURI(container) + "/" + sanitizeForURI(name));
+							method.getParams().setIntParameter("http.socket.timeout", this.getConnectionTimeOut());
+							method.setHeader(FilesConstants.X_AUTH_TOKEN, this.getAuthToken());
 							if (useETag)
 							{
 								method.setHeader(FilesConstants.E_TAG, md5Sum(obj));
@@ -2513,9 +2507,9 @@ public class FilesClient
 				HttpPut method = null;
 				try
 				{
-					method = new HttpPut(storageURL + "/" + sanitizeForURI(container) + "/" + sanitizeForURI(name));
-					method.getParams().setIntParameter("http.socket.timeout", connectionTimeOut);
-					method.setHeader(FilesConstants.X_AUTH_TOKEN, authToken);
+					method = new HttpPut(this.getStorageURL() + "/" + sanitizeForURI(container) + "/" + sanitizeForURI(name));
+					method.getParams().setIntParameter("http.socket.timeout", this.getConnectionTimeOut());
+					method.setHeader(FilesConstants.X_AUTH_TOKEN, this.getAuthToken());
 					if (useETag)
 					{
 						method.setHeader(FilesConstants.E_TAG, md5Sum(obj));
@@ -2535,9 +2529,9 @@ public class FilesClient
 						method.abort();
 						if (login())
 						{
-							method = new HttpPut(storageURL + "/" + sanitizeForURI(container) + "/" + sanitizeForURI(name));
-							method.getParams().setIntParameter("http.socket.timeout", connectionTimeOut);
-							method.setHeader(FilesConstants.X_AUTH_TOKEN, authToken);
+							method = new HttpPut(this.getStorageURL() + "/" + sanitizeForURI(container) + "/" + sanitizeForURI(name));
+							method.getParams().setIntParameter("http.socket.timeout", this.getConnectionTimeOut());
+							method.setHeader(FilesConstants.X_AUTH_TOKEN, this.getAuthToken());
 							if (useETag)
 							{
 								method.setHeader(FilesConstants.E_TAG, md5Sum(obj));
@@ -2619,9 +2613,9 @@ public class FilesClient
 		{
 			if (isValidContainerName(container) && isValidObjectName(name))
 			{
-				HttpPut method = new HttpPut(storageURL + "/" + sanitizeForURI(container) + "/" + sanitizeForURI(name));
-				method.getParams().setIntParameter("http.socket.timeout", connectionTimeOut);
-				method.setHeader(FilesConstants.X_AUTH_TOKEN, authToken);
+				HttpPut method = new HttpPut(this.getStorageURL() + "/" + sanitizeForURI(container) + "/" + sanitizeForURI(name));
+				method.getParams().setIntParameter("http.socket.timeout", this.getConnectionTimeOut());
+				method.setHeader(FilesConstants.X_AUTH_TOKEN, this.getAuthToken());
 				InputStreamEntity entity = new InputStreamEntity(data, -1);
 				entity.setChunked(true);
 				entity.setContentType(contentType);
@@ -2688,9 +2682,9 @@ public class FilesClient
 		{
 			if (isValidContainerName(container) && isValidObjectName(name))
 			{
-				HttpPut method = new HttpPut(storageURL + "/" + sanitizeForURI(container) + "/" + sanitizeForURI(name));
-				method.getParams().setIntParameter("http.socket.timeout", connectionTimeOut);
-				method.setHeader(FilesConstants.X_AUTH_TOKEN, authToken);
+				HttpPut method = new HttpPut(this.getStorageURL() + "/" + sanitizeForURI(container) + "/" + sanitizeForURI(name));
+				method.getParams().setIntParameter("http.socket.timeout", this.getConnectionTimeOut());
+				method.setHeader(FilesConstants.X_AUTH_TOKEN, this.getAuthToken());
 				method.setEntity(entity);
 				if (useETag && md5sum != null)
 				{
@@ -2710,9 +2704,9 @@ public class FilesClient
 					{
 						method.abort();
 						login();
-						method = new HttpPut(storageURL + "/" + sanitizeForURI(container) + "/" + sanitizeForURI(name));
-						method.getParams().setIntParameter("http.socket.timeout", connectionTimeOut);
-						method.setHeader(FilesConstants.X_AUTH_TOKEN, authToken);
+						method = new HttpPut(this.getStorageURL() + "/" + sanitizeForURI(container) + "/" + sanitizeForURI(name));
+						method.getParams().setIntParameter("http.socket.timeout", this.getConnectionTimeOut());
+						method.setHeader(FilesConstants.X_AUTH_TOKEN, this.getAuthToken());
 						method.setEntity(entity);
 						method.setHeader(entity.getContentType());
 						for (String key : metadata.keySet())
@@ -2793,10 +2787,10 @@ public class FilesClient
 					String destinationURI = sanitizeForURI(destContainer) +
 							"/" + sanitizeForURI(destObjName);
 
-					method = new HttpPut(storageURL + "/" + destinationURI);
+					method = new HttpPut(this.getStorageURL() + "/" + destinationURI);
 					method.getParams().setIntParameter("http.socket.timeout",
-							connectionTimeOut);
-					method.setHeader(FilesConstants.X_AUTH_TOKEN, authToken);
+							this.getConnectionTimeOut());
+					method.setHeader(FilesConstants.X_AUTH_TOKEN, this.getAuthToken());
 					method.setHeader(FilesConstants.X_COPY_FROM, sourceURI);
 
 					FilesResponse response = new FilesResponse(client.execute(
@@ -2807,10 +2801,10 @@ public class FilesClient
 						method.abort();
 
 						login();
-						method = new HttpPut(storageURL + "/" + destinationURI);
+						method = new HttpPut(this.getStorageURL() + "/" + destinationURI);
 						method.getParams().setIntParameter("http.socket.timeout",
-								connectionTimeOut);
-						method.setHeader(FilesConstants.X_AUTH_TOKEN, authToken);
+								this.getConnectionTimeOut());
+						method.setHeader(FilesConstants.X_AUTH_TOKEN, this.getAuthToken());
 						method.setHeader(FilesConstants.X_COPY_FROM, sourceURI);
 
 						response = new FilesResponse(client.execute(method));
@@ -2887,19 +2881,19 @@ public class FilesClient
 				HttpDelete method = null;
 				try
 				{
-					method = new HttpDelete(storageURL + "/" + sanitizeForURI(container) + "/" + sanitizeForURI(objName));
-					method.getParams().setIntParameter("http.socket.timeout", connectionTimeOut);
-					method.setHeader(FilesConstants.X_AUTH_TOKEN, authToken);
+					method = new HttpDelete(this.getStorageURL() + "/" + sanitizeForURI(container) + "/" + sanitizeForURI(objName));
+					method.getParams().setIntParameter("http.socket.timeout", this.getConnectionTimeOut());
+					method.setHeader(FilesConstants.X_AUTH_TOKEN, this.getAuthToken());
 					FilesResponse response = new FilesResponse(client.execute(method));
 
 					if (response.getStatusCode() == HttpStatus.SC_UNAUTHORIZED)
 					{
 						method.abort();
 						login();
-						method = new HttpDelete(storageURL + "/" + sanitizeForURI(container) + "/" + sanitizeForURI(objName));
-						method.getParams().setIntParameter("http.socket.timeout", connectionTimeOut);
-						method.getParams().setIntParameter("http.socket.timeout", connectionTimeOut);
-						method.setHeader(FilesConstants.X_AUTH_TOKEN, authToken);
+						method = new HttpDelete(this.getStorageURL() + "/" + sanitizeForURI(container) + "/" + sanitizeForURI(objName));
+						method.getParams().setIntParameter("http.socket.timeout", this.getConnectionTimeOut());
+						method.getParams().setIntParameter("http.socket.timeout", this.getConnectionTimeOut());
+						method.setHeader(FilesConstants.X_AUTH_TOKEN, this.getAuthToken());
 						response = new FilesResponse(client.execute(method));
 					}
 
@@ -2960,19 +2954,19 @@ public class FilesClient
 		{
 			if (isValidContainerName(container) && isValidObjectName(objName))
 			{
-				HttpHead method = new HttpHead(storageURL + "/" + sanitizeForURI(container) + "/" + sanitizeForURI(objName));
+				HttpHead method = new HttpHead(this.getStorageURL() + "/" + sanitizeForURI(container) + "/" + sanitizeForURI(objName));
 				try
 				{
-					method.getParams().setIntParameter("http.socket.timeout", connectionTimeOut);
-					method.setHeader(FilesConstants.X_AUTH_TOKEN, authToken);
+					method.getParams().setIntParameter("http.socket.timeout", this.getConnectionTimeOut());
+					method.setHeader(FilesConstants.X_AUTH_TOKEN, this.getAuthToken());
 					FilesResponse response = new FilesResponse(client.execute(method));
 
 					if (response.getStatusCode() == HttpStatus.SC_UNAUTHORIZED)
 					{
 						method.abort();
 						login();
-						method.getParams().setIntParameter("http.socket.timeout", connectionTimeOut);
-						method.setHeader(FilesConstants.X_AUTH_TOKEN, authToken);
+						method.getParams().setIntParameter("http.socket.timeout", this.getConnectionTimeOut());
+						method.setHeader(FilesConstants.X_AUTH_TOKEN, this.getAuthToken());
 						response = new FilesResponse(client.execute(method));
 					}
 
@@ -3055,9 +3049,9 @@ public class FilesClient
 		{
 			if (isValidContainerName(container) && isValidObjectName(objName))
 			{
-				HttpGet method = new HttpGet(storageURL + "/" + sanitizeForURI(container) + "/" + sanitizeForURI(objName));
-				method.getParams().setIntParameter("http.socket.timeout", connectionTimeOut);
-				method.setHeader(FilesConstants.X_AUTH_TOKEN, authToken);
+				HttpGet method = new HttpGet(this.getStorageURL() + "/" + sanitizeForURI(container) + "/" + sanitizeForURI(objName));
+				method.getParams().setIntParameter("http.socket.timeout", this.getConnectionTimeOut());
+				method.setHeader(FilesConstants.X_AUTH_TOKEN, this.getAuthToken());
 
 				try
 				{
@@ -3126,18 +3120,18 @@ public class FilesClient
 					logger.warn("Truncated Object Name is: " + objName);
 				}
 
-				HttpGet method = new HttpGet(storageURL + "/" + sanitizeForURI(container) + "/" + sanitizeForURI(objName));
-				method.getParams().setIntParameter("http.socket.timeout", connectionTimeOut);
-				method.setHeader(FilesConstants.X_AUTH_TOKEN, authToken);
+				HttpGet method = new HttpGet(this.getStorageURL() + "/" + sanitizeForURI(container) + "/" + sanitizeForURI(objName));
+				method.getParams().setIntParameter("http.socket.timeout", this.getConnectionTimeOut());
+				method.setHeader(FilesConstants.X_AUTH_TOKEN, this.getAuthToken());
 				FilesResponse response = new FilesResponse(client.execute(method));
 
 				if (response.getStatusCode() == HttpStatus.SC_UNAUTHORIZED)
 				{
 					method.abort();
 					login();
-					method = new HttpGet(storageURL + "/" + sanitizeForURI(container) + "/" + sanitizeForURI(objName));
-					method.getParams().setIntParameter("http.socket.timeout", connectionTimeOut);
-					method.setHeader(FilesConstants.X_AUTH_TOKEN, authToken);
+					method = new HttpGet(this.getStorageURL() + "/" + sanitizeForURI(container) + "/" + sanitizeForURI(objName));
+					method.getParams().setIntParameter("http.socket.timeout", this.getConnectionTimeOut());
+					method.setHeader(FilesConstants.X_AUTH_TOKEN, this.getAuthToken());
 					response = new FilesResponse(client.execute(method));
 				}
 
@@ -3189,9 +3183,9 @@ public class FilesClient
 					logger.warn("Truncated Object Name is: " + objName);
 				}
 
-				HttpGet method = new HttpGet(storageURL + "/" + sanitizeForURI(container) + "/" + sanitizeForURI(objName));
-				method.getParams().setIntParameter("http.socket.timeout", connectionTimeOut);
-				method.setHeader(FilesConstants.X_AUTH_TOKEN, authToken);
+				HttpGet method = new HttpGet(this.getStorageURL() + "/" + sanitizeForURI(container) + "/" + sanitizeForURI(objName));
+				method.getParams().setIntParameter("http.socket.timeout", this.getConnectionTimeOut());
+				method.setHeader(FilesConstants.X_AUTH_TOKEN, this.getAuthToken());
 				method.setHeader("Range", "bytes=" + offset + "-" + length);
 				FilesResponse response = new FilesResponse(client.execute(method));
 
@@ -3199,9 +3193,9 @@ public class FilesClient
 				{
 					method.abort();
 					login();
-					method = new HttpGet(storageURL + "/" + sanitizeForURI(container) + "/" + sanitizeForURI(objName));
-					method.getParams().setIntParameter("http.socket.timeout", connectionTimeOut);
-					method.setHeader(FilesConstants.X_AUTH_TOKEN, authToken);
+					method = new HttpGet(this.getStorageURL() + "/" + sanitizeForURI(container) + "/" + sanitizeForURI(objName));
+					method.getParams().setIntParameter("http.socket.timeout", this.getConnectionTimeOut());
+					method.setHeader(FilesConstants.X_AUTH_TOKEN, this.getAuthToken());
 					response = new FilesResponse(client.execute(method));
 				}
 
@@ -3417,7 +3411,7 @@ public class FilesClient
 	 */
 	public boolean isLoggedin()
 	{
-		return authToken != null;
+		return this.getAuthToken() != null;
 	}
 
 	/**
@@ -3533,7 +3527,7 @@ public class FilesClient
 	}
 
 	/**
-	 * @return the cdnManagementURL
+	 * @return the this.getCdnManagementURL()
 	 */
 	public String getCdnManagementURL()
 	{
@@ -3563,7 +3557,7 @@ public class FilesClient
 		if (!isValidObjectName(object))
 			throw new FilesInvalidNameException(object);
 
-		String postUrl = storageURL + "/" + FilesClient.sanitizeForURI(container) +
+		String postUrl = this.getStorageURL() + "/" + FilesClient.sanitizeForURI(container) +
 				"/" + FilesClient.sanitizeForURI(object);
 
 		HttpPost method = null;
@@ -3574,8 +3568,8 @@ public class FilesClient
 			{
 				method.setHeader(FilesConstants.MANIFEST_HEADER, manifest);
 			}
-			method.getParams().setIntParameter("http.socket.timeout", connectionTimeOut);
-			method.setHeader(FilesConstants.X_AUTH_TOKEN, authToken);
+			method.getParams().setIntParameter("http.socket.timeout", this.getConnectionTimeOut());
+			method.setHeader(FilesConstants.X_AUTH_TOKEN, this.getAuthToken());
 			if (!(metadata == null || metadata.isEmpty()))
 			{
 				for (String key : metadata.keySet())
@@ -3590,8 +3584,8 @@ public class FilesClient
 				if (login())
 				{
 					method = new HttpPost(postUrl);
-					method.getParams().setIntParameter("http.socket.timeout", connectionTimeOut);
-					method.setHeader(FilesConstants.X_AUTH_TOKEN, authToken);
+					method.getParams().setIntParameter("http.socket.timeout", this.getConnectionTimeOut());
+					method.setHeader(FilesConstants.X_AUTH_TOKEN, this.getAuthToken());
 					if (!(metadata == null || metadata.isEmpty()))
 					{
 						for (String key : metadata.keySet())
@@ -3628,7 +3622,7 @@ public class FilesClient
 		else
 		{
 			snet = true;
-			if (storageURL != null)
+			if (this.getStorageURL() != null)
 			{
 				storageURL = snetAddr + storageURL.substring(8);
 			}
@@ -3643,7 +3637,7 @@ public class FilesClient
 		else
 		{
 			snet = false;
-			if (storageURL != null)
+			if (this.getStorageURL() != null)
 			{
 				storageURL = "https://" + storageURL.substring(snetAddr.length());
 			}
