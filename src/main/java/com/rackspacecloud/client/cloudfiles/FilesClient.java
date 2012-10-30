@@ -822,7 +822,8 @@ public class FilesClient
 			}
 			else if (response.getStatusCode() == HttpStatus.SC_NOT_FOUND)
 			{
-				throw new FilesNotFoundException("Container was not found", response.getResponseHeaders(), response.getStatusLine());
+				throw new FilesContainerNotFoundException("Container not found: "+container,
+                        response.getResponseHeaders(), response.getStatusLine());
 			}
 			else
 			{
@@ -1104,7 +1105,8 @@ public class FilesClient
 					}
 					else if (response.getStatusCode() == HttpStatus.SC_NOT_FOUND)
 					{
-						throw new FilesNotFoundException("Container not found: " + container, response.getResponseHeaders(), response.getStatusLine());
+						throw new FilesContainerNotFoundException("Container not found: " + container,
+                                response.getResponseHeaders(), response.getStatusLine());
 					}
 					else
 					{
