@@ -15,6 +15,14 @@
     <version>1.9.1</version>
     <packaging>jar</packaging>
 
+    <properties>
+        <sonar.host.url>http://${sonar.host}:9000/</sonar.host.url>
+        <sonar.jdbc.url>
+            jdbc:mysql://${sonar.host}:3306/sonar?useUnicode=true&amp;characterEncoding=utf8
+        </sonar.jdbc.url>
+        <sonar.jdbc.driver>com.mysql.jdbc.Driver</sonar.jdbc.driver>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>commons-cli</groupId>
@@ -24,7 +32,7 @@
         <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
-            <version>2.1</version>
+            <version>2.4</version>
         </dependency>
         <dependency>
             <groupId>commons-lang</groupId>
@@ -34,7 +42,7 @@
         <dependency>
             <groupId>commons-codec</groupId>
             <artifactId>commons-codec</artifactId>
-            <version>1.6</version>
+            <version>1.7</version>
         </dependency>
         <dependency>
             <groupId>commons-logging</groupId>
@@ -44,17 +52,17 @@
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpcore</artifactId>
-            <version>4.2.1</version>
+            <version>4.2.2</version>
         </dependency>
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpclient</artifactId>
-            <version>4.2</version>
+            <version>4.2.1</version>
         </dependency>
         <dependency>
             <groupId>log4j</groupId>
             <artifactId>log4j</artifactId>
-            <version>1.2.16</version>
+            <version>1.2.17</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
@@ -79,6 +87,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
+                <version>2.3.2</version>
                 <configuration>
                     <source>1.5</source>
                     <target>1.5</target>
@@ -87,7 +96,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-source-plugin</artifactId>
-                <version>2.1.2</version>
+                <version>2.2</version>
                 <executions>
                     <execution>
                         <id>attach-sources</id>
@@ -98,12 +107,11 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>sonar-maven-plugin</artifactId>
+                <version>2.0</version>
+            </plugin>
         </plugins>
     </build>
-
-    <scm>
-        <connection>scm:git:git@github.com/rackspace/java-cloudfiles.git</connection>
-        <developerConnection>scm:git:git@github.com/rackspace/java-cloudfiles.git</developerConnection>
-        <url>git@github.com/rackspace/java-cloudfiles.git</url>
-    </scm>
 </project>
