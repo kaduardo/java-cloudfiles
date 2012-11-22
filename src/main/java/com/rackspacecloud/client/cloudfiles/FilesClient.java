@@ -3034,6 +3034,93 @@ public class FilesClient
 
 
 	/**
+	 * Get an container's metadata
+	 *
+	 * @param container The name of the container
+	 * @return The container's metadata
+	 * @throws IOException				 There was an IO error doing network communication
+	 * @throws HttpException			   There was an error with the HTTP protocol
+	 * @throws FilesAuthorizationException The Client's Login was invalid.
+	 * @throws FilesInvalidNameException   The container or object name was not valid
+	 */
+	public FilesContainerMetaData getContainerMetaData(String container) throws IOException, HttpException
+	{
+        FilesContainerMetaData metaData;
+		if (this.isLoggedin())
+		{
+			if (isValidContainerName(container))
+			{
+				HttpHead method = new HttpHead(this.getStorageURL() + "/" + sanitizeForURI(container));
+				try
+				{
+					method.getParams().setIntParameter("http.socket.timeout", this.getConnectionTimeOut());
+					method.setHeader(FilesConstants.X_AUTH_TOKEN, this.getAuthToken());
+					FilesResponse response = new FilesResponse(client.execute(method));
+
+					if (response.getStatusCode() == HttpStatus.SC_UNAUTHORIZED)
+					{
+						method.abort();
+						login();
+						method.getParams().setIntParameter("http.socket.timeout", this.getConnectionTimeOut());
+						method.setHeader(FilesConstants.X_AUTH_TOKEN, this.getAuthToken());
+						response = new FilesResponse(client.execute(method));
+					}
+
+					if (response.getStatusCode() == HttpStatus.SC_NO_CONTENT ||
+							response.getStatusCode() == HttpStatus.SC_OK)
+					{
+						logger.debug("Container metadata retreived  : " + container);
+						String mimeType = response.getContentType();
+						String lastModified = response.getLastModified();
+						String eTag = response.getETag();
+						String contentLength = response.getContentLength();
+
+						metaData = new FilesContainerMetaData(mimeType, contentLength, eTag, lastModified);
+
+						Header[] headers = response.getResponseHeaders();
+						HashMap<String, String> headerMap = new HashMap<String, String>();
+
+						for (Header h : headers)
+						{
+							if (h.getName().startsWith(FilesConstants.X_CONTAINER_META))
+							{
+								headerMap.put(h.getName().substring(FilesConstants.X_CONTAINER_META.length()), unencodeURI(h.getValue()));
+							}
+						}
+						if (headerMap.size() > 0)
+							metaData.setMetaData(headerMap);
+
+						return metaData;
+					}
+					else if (response.getStatusCode() == HttpStatus.SC_NOT_FOUND)
+					{
+                        throw new FilesContainerNotFoundException("Container not found: "+container,
+                                            response.getResponseHeaders(), response.getStatusLine());
+					}
+					else
+					{
+						throw new FilesException("Unexpected Return Code from Server",
+								response.getResponseHeaders(), response.getStatusLine());
+					}
+				}
+				finally
+				{
+					method.abort();
+				}
+			}
+			else
+			{
+                throw new FilesInvalidNameException(container);
+			}
+		}
+		else
+		{
+			throw new FilesAuthorizationException("You must be logged in", null, null);
+		}
+	}
+
+
+	/**
 	 * Get the content of the given object
 	 *
 	 * @param container The name of the container
@@ -3592,6 +3679,58 @@ public class FilesClient
 					{
 						for (String key : metadata.keySet())
 							method.setHeader(FilesConstants.X_OBJECT_META + key,
+									FilesClient.sanitizeForURI(metadata.get(key)));
+					}
+					client.execute(method);
+				}
+			}
+
+			return true;
+		}
+		finally
+		{
+			if (method != null)
+				method.abort();
+		}
+
+	}
+
+    public boolean updateContainerMetadata(String container,
+                                           Map<String, String> metadata)
+            throws HttpException, IOException
+	{
+		FilesResponse response;
+		if (!isValidContainerName(container))
+			throw new FilesInvalidNameException(container);
+
+		String postUrl = this.getStorageURL() + "/" + FilesClient.sanitizeForURI(container);
+
+		HttpPost method = null;
+		try
+		{
+			method = new HttpPost(postUrl);
+			method.getParams().setIntParameter("http.socket.timeout", this.getConnectionTimeOut());
+			method.setHeader(FilesConstants.X_AUTH_TOKEN, this.getAuthToken());
+			if (!(metadata == null || metadata.isEmpty()))
+			{
+				for (String key : metadata.keySet())
+					method.setHeader(FilesConstants.X_CONTAINER_META + key,
+							FilesClient.sanitizeForURI(metadata.get(key)));
+			}
+			HttpResponse resp = client.execute(method);
+			response = new FilesResponse(resp);
+			if (response.getStatusCode() == HttpStatus.SC_UNAUTHORIZED)
+			{
+				method.abort();
+				if (login())
+				{
+					method = new HttpPost(postUrl);
+					method.getParams().setIntParameter("http.socket.timeout", this.getConnectionTimeOut());
+					method.setHeader(FilesConstants.X_AUTH_TOKEN, this.getAuthToken());
+					if (!(metadata == null || metadata.isEmpty()))
+					{
+						for (String key : metadata.keySet())
+							method.setHeader(FilesConstants.X_CONTAINER_META + key,
 									FilesClient.sanitizeForURI(metadata.get(key)));
 					}
 					client.execute(method);

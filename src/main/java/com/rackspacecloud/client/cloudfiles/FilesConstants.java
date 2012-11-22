@@ -99,13 +99,9 @@ public class FilesConstants
 	 * These constants are used for performing queries on the content of a container *
 	 */
 	public static final String LIST_CONTAINER_NAME_QUERY = "prefix";
-	public static final String LIST_CONTAINER_LIMIT_OBJ_COUNT_QUERY = "limit";
-	public static final String LIST_CONTAINER_START_OFFSET_QUERY = "offset";
 
 	public static final int CONTAINER_NAME_LENGTH = 256;
 	public static final int OBJECT_NAME_LENGTH = 1024;
-	public static final int METADATA_NAME_LENGTH = 1024;
-	public static final int METADATA_VALUE_LENGTH = 1024;
 
 	public static final String X_PURGE_EMAIL = "X-Purge-Email";
 
@@ -113,6 +109,7 @@ public class FilesConstants
 	 * Prefix Cloud Files expects on all Meta data headers on Objects *
 	 */
 	public static final String X_OBJECT_META = "X-Object-Meta-";
+	public static final String X_CONTAINER_META = "X-Container-Meta-";
 
 	public static Properties MIMETYPES = new Properties();
 
