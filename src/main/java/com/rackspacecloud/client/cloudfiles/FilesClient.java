@@ -4,7 +4,9 @@
 
 package com.rackspacecloud.client.cloudfiles;
 
-import com.rackspacecloud.client.cloudfiles.wrapper.RequestEntityWrapper;
+
+
+
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.EncoderException;
 import org.apache.commons.codec.net.URLCodec;
@@ -41,6 +43,8 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
+
+import com.rackspacecloud.client.cloudfiles.wrapper.RequestEntityWrapper;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -99,25 +103,27 @@ import java.util.Map;
  *
  * @author lvaughn
  */
+@SuppressWarnings("deprecation")
 public class FilesClient
 {
 	public static final String VERSION = "v1";
 
-	private String username = null;
-	private String password = null;
-	private String account = null;
-	private String authenticationURL;
-	private int connectionTimeOut;
-	private String storageURL = null;
-	private String cdnManagementURL = null;
-	private String authToken = null;
-	private boolean useETag = true;
-	private boolean snet = false;
-	private String snetAddr = "https://snet-";
+	protected String username = null;
+	protected String password = null;
+	protected String account = null;
+	protected String authenticationURL;
+	protected int connectionTimeOut;
+	protected String storageURL = null;
+	protected String cdnManagementURL = null;
+	protected String authToken = null;
+	protected boolean useETag = true;
+	protected boolean snet = false;
+	protected String snetAddr = "https://snet-";
+	protected boolean isLoggedin = false;
 
-	private HttpClient client = null;
+	protected HttpClient client = null;
 
-	private static Logger logger = Logger.getLogger(FilesClient.class);
+	protected static Logger logger = Logger.getLogger(FilesClient.class);
 
 	/**
 	 * @param client			The HttpClient to talk to Swift
@@ -285,7 +291,6 @@ public class FilesClient
 				this.getUserName());
 		method.setHeader(FilesUtil.getProperty("auth_pass_header", FilesConstants.X_STORAGE_PASS_DEFAULT),
 				this.getPassword());
-
 		try
 		{
 			FilesResponse response = new FilesResponse(client.execute(method));
@@ -322,7 +327,7 @@ public class FilesClient
 	 * @param url URL retrieved from service
 	 * @return URI with default port added.
 	 */
-	protected String parseURI(String url) {
+	public String parseURI(String url) {
         if(null == url) {
             return null;
         }
@@ -362,6 +367,7 @@ public class FilesClient
 	 */
 	public boolean login(String authToken, String storageURL, String cdnManagmentUrl) throws IOException, HttpException
 	{
+		this.isLoggedin   = true;
 		this.storageURL = storageURL;
 		this.cdnManagementURL = cdnManagmentUrl;
 		this.authToken = authToken;
