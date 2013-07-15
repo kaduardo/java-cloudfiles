@@ -123,7 +123,7 @@ public class FilesClient
 
 	protected HttpClient client = null;
 
-	protected static Logger logger = Logger.getLogger(FilesClient.class);
+	private static Logger logger = Logger.getLogger(FilesClient.class);
 
 	/**
 	 * @param client			The HttpClient to talk to Swift
@@ -327,7 +327,7 @@ public class FilesClient
 	 * @param url URL retrieved from service
 	 * @return URI with default port added.
 	 */
-	public String parseURI(String url) {
+	protected String parseURI(String url) {
         if(null == url) {
             return null;
         }
@@ -367,7 +367,6 @@ public class FilesClient
 	 */
 	public boolean login(String authToken, String storageURL, String cdnManagmentUrl) throws IOException, HttpException
 	{
-		this.isLoggedin   = true;
 		this.storageURL = storageURL;
 		this.cdnManagementURL = cdnManagmentUrl;
 		this.authToken = authToken;

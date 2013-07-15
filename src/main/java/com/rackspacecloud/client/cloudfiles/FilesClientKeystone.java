@@ -11,12 +11,15 @@ import org.apache.http.HttpException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
+import org.apache.log4j.Logger;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 
 public class FilesClientKeystone extends FilesClient {
 
+	private static Logger logger = Logger.getLogger(FilesClientKeystone.class);
+	
 	public FilesClientKeystone() {
 		super();
 		// TODO Auto-generated constructor stub
@@ -45,35 +48,7 @@ public class FilesClientKeystone extends FilesClient {
 		// TODO Auto-generated constructor stub
 	}
 	
-	public void authenticate()  throws IOException, HttpException {
-		
-		HttpPost method = new HttpPost(authenticationURL);
-        method.getParams().setIntParameter("http.socket.timeout", connectionTimeOut);
-        
-        StringEntity entity = new StringEntity(getJSONBody());
-        entity.setContentType("application/json");
-        method.setEntity(entity);
-
-        FilesResponse2 response = new FilesResponse2(client.execute(method));
-        
-        if (response.loginSuccess()) {
-            isLoggedin = true;
-            if(usingSnet() || envSnet()) {
-            	storageURL = snetAddr + response.getStorageURL().substring(8);
-            } else {
-            	storageURL = response.getStorageURL();
-            }
-            cdnManagementURL = response.getCDNManagementURL();
-            authToken = response.getAuthToken();
-            logger.debug("storageURL: " + storageURL);
-            logger.debug("authToken: " + authToken);
-            logger.debug("cdnManagementURL:" + cdnManagementURL);
-            logger.debug("ConnectionManager:" + client.getConnectionManager());
-        }
-        method.abort();
-
-	}
-        
+	@Override
     public boolean login() throws IOException, HttpException
     {
     	try
@@ -82,42 +57,51 @@ public class FilesClientKeystone extends FilesClient {
 		}
 		catch (FilesAuthorizationException e)
 		{
+			logger.error(e);
 			return false;
 		}
 		return this.isLoggedin();
     }
-    
-    
-    
-    public boolean login(String username, String endpoint, String account) throws IOException, HttpException
-    {
-    	HttpPost method = new HttpPost(endpoint);
-        method.getParams().setIntParameter("http.socket.timeout", connectionTimeOut);
+     
+	@Override
+	public void authenticate()  throws IOException, HttpException {
+		
+		HttpPost method = new HttpPost(this.getAuthenticationURL());
+        method.getParams().setIntParameter("http.socket.timeout", this.getConnectionTimeOut());
         
         StringEntity entity = new StringEntity(getJSONBody());
         entity.setContentType("application/json");
         method.setEntity(entity);
 
-        FilesResponse2 response = new FilesResponse2(client.execute(method));
+        try 
+        {
+        	FilesResponse2 response = new FilesResponse2(client.execute(method));
         
-        if (response.loginSuccess()) {
-            isLoggedin = true;
-            if(usingSnet() || envSnet()) {
-            	storageURL = snetAddr + response.getStorageURL().substring(8);
-            } else {
-            	storageURL = response.getStorageURL();
-            }
-            cdnManagementURL = response.getCDNManagementURL();
-            authToken = response.getAuthToken();
-            logger.debug("storageURL: " + storageURL);
-            logger.debug("authToken: " + authToken);
-            logger.debug("cdnManagementURL:" + cdnManagementURL);
-            logger.debug("ConnectionManager:" + client.getConnectionManager());
+        	if (response.loginSuccess()) {
+        		isLoggedin = true;
+        		if(usingSnet() || envSnet()) {
+        			storageURL = snetAddr + response.getStorageURL().substring(8);
+        		} else {
+        			storageURL = response.getStorageURL();
+        		}
+        		cdnManagementURL = response.getCDNManagementURL();
+        		authToken = response.getAuthToken();
+        		logger.debug("storageURL: " + storageURL);
+        		logger.debug("authToken: " + authToken);
+        		logger.debug("cdnManagementURL:" + cdnManagementURL);
+        		logger.debug("ConnectionManager:" + client.getConnectionManager());
+        	}
+        	else
+        	{
+        		throw new FilesAuthorizationException("Login failed", response.getResponseHeaders(), response.getStatusLine());
+        	}
         }
-        method.abort();
+        finally
+        {
+        	method.abort();
+        }
 
-        return this.isLoggedin;
-    }
+	}
     
     private String getJSONBody() {
         String[] tempArr = username.split(":");
@@ -143,6 +127,7 @@ public class FilesClientKeystone extends FilesClient {
  
         return null;
     }
+    
     
     private boolean envSnet()
 	{
