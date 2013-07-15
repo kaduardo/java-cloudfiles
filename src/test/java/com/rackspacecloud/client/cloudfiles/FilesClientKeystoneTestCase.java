@@ -70,8 +70,6 @@ public class FilesClientKeystoneTestCase extends TestCase {
 		} catch (Exception e) {
 			fail(e.getMessage());
 		} 
-		
-		fail("Not yet implemented"); // TODO
 	}
 
 	@Test
