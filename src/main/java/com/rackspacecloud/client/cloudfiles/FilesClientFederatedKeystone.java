@@ -290,7 +290,7 @@ public class FilesClientFederatedKeystone extends FilesClientKeystone {
 		JSONArray tenants = new JSONArray(tenantsArray);
 		for (int i = 0; i < tenants.length(); i++) {
 			JSONObject tenant = tenants.getJSONObject(i);
-			if (tenant.getString("friendlyName").equals(tenantFn)) {
+			if (tenant.getString("friendlyName").equals(tenantFn)) { //No novo é project
 				logger.debug("-- " + tenant.getString("friendlyName"));
 				tenantId = tenant.getString("id");
 			}
