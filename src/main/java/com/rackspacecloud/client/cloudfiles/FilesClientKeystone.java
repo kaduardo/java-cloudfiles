@@ -18,34 +18,32 @@ import org.json.JSONObject;
 
 public class FilesClientKeystone extends FilesClient {
 
+	private static final String VERSION = "v2.0";
+	private static final String TOKENS = "/tokens";
+	
 	private static Logger logger = Logger.getLogger(FilesClientKeystone.class);
 	
 	public FilesClientKeystone() {
 		super();
-		// TODO Auto-generated constructor stub
 	}
 
 	public FilesClientKeystone(HttpClient client, String username,
 			String password, String authUrl, String account,
 			int connectionTimeOut) {
 		super(client, username, password, authUrl, account, connectionTimeOut);
-		// TODO Auto-generated constructor stub
 	}
 
 	public FilesClientKeystone(String username, String password,
 			String authUrl, String account, int connectionTimeOut) {
 		super(username, password, authUrl, account, connectionTimeOut);
-		// TODO Auto-generated constructor stub
 	}
 
 	public FilesClientKeystone(String username, String password, String authUrl) {
 		super(username, password, authUrl);
-		// TODO Auto-generated constructor stub
 	}
 
 	public FilesClientKeystone(String username, String apiAccessKey) {
 		super(username, apiAccessKey);
-		// TODO Auto-generated constructor stub
 	}
 	
 	@Override
@@ -65,7 +63,7 @@ public class FilesClientKeystone extends FilesClient {
      
 	@Override
 	public void authenticate()  throws IOException, HttpException {
-		
+		//TODO confirm if the "/tokens" must be included here
 		HttpPost method = new HttpPost(this.getAuthenticationURL());
         method.getParams().setIntParameter("http.socket.timeout", this.getConnectionTimeOut());
         

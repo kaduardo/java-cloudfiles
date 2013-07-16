@@ -27,9 +27,9 @@ public class FilesClientKeystoneFederatedTestCase {
 			// String[] response =
 			// federatedAuth.getIDPRequest("http://cana.ect.ufrn.br:5000/v2.0/tokens",
 			// idps.get(0));
-			String[] response = federatedAuth.getIDPRequest(idps.get(0));
+			String[] response = federatedAuth.getIdPRequest(idps.get(0));
 
-			String idpMaisResponse = federatedAuth.getIDPMaisResponse(
+			String idpMaisResponse = federatedAuth.getIdPResponse(
 					IDPMAISENDPOINT //response[0]
 					,response[1]);
 

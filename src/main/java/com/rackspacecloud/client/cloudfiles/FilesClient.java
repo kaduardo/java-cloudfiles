@@ -103,7 +103,6 @@ import java.util.Map;
  *
  * @author lvaughn
  */
-@SuppressWarnings("deprecation")
 public class FilesClient
 {
 	public static final String VERSION = "v1";
@@ -3478,6 +3477,16 @@ public class FilesClient
 	public String getStorageURL()
 	{
 		return storageURL;
+	}
+	
+	/**
+	 * Sets the storage URL of swift. This method should be used
+	 * by the sub-classes.
+	 * 
+	 * @param storageURL
+	 */
+	protected void setStorageURL(String storageURL) {
+		this.storageURL = storageURL;
 	}
 
 	/**

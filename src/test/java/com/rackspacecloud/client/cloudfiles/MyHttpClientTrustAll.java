@@ -68,10 +68,10 @@ public class MyHttpClientTrustAll extends DefaultHttpClient {
     @Override
     protected ClientConnectionManager createClientConnectionManager() {
         SchemeRegistry registry = new SchemeRegistry();
-        registry.register(new Scheme("http", 80, PlainSocketFactory.getSocketFactory()));
+        registry.register(new Scheme("http", PlainSocketFactory.getSocketFactory(), 80));
         // Register for port 443 our SSLSocketFactory with our keystore
         // to the ConnectionManager
-        registry.register(new Scheme("https", 443, newSslSocketFactory()));
+        registry.register(new Scheme("https", newSslSocketFactory(), 443));
         return new SingleClientConnManager(getParams(), registry);
         
     }
