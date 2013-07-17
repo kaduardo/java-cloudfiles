@@ -64,7 +64,7 @@ public class FilesClientKeystone extends FilesClient {
 	@Override
 	public void authenticate()  throws IOException, HttpException {
 		//TODO confirm if the "/tokens" must be included here
-		HttpPost method = new HttpPost(this.getAuthenticationURL());
+		HttpPost method = new HttpPost(this.getAuthenticationURL()+ TOKENS);
         method.getParams().setIntParameter("http.socket.timeout", this.getConnectionTimeOut());
         
         StringEntity entity = new StringEntity(getJSONBody());
