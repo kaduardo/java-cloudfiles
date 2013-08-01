@@ -130,7 +130,6 @@ public class IDPMaisClient {
     	setPassword(senha);
     	setServiceAppliesTo(serviceAppliesTo);
     	
-    	
     	 // Autentica o usu��rio e obt��m asser����o SAML com dados do usu��rio
         Element securityTokenFromSts = getTokenFromSts();
         System.out.println(XMLHelper.prettyPrintXML(securityTokenFromSts));

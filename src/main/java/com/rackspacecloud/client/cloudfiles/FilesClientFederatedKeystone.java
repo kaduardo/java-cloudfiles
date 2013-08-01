@@ -18,6 +18,7 @@ import java.util.zip.Inflater;
 
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpException;
 import org.apache.http.HttpResponse;
@@ -37,6 +38,18 @@ import com.sun.xml.ws.api.security.trust.WSTrustException;
 public class FilesClientFederatedKeystone extends FilesClientKeystone {
 	private static Logger logger = Logger
 			.getLogger(FilesClientFederatedKeystone.class);
+	
+	private List<String> realms;
+	
+	private List<String> idps;
+	
+	private String samlResquest;
+	
+	private String unscopedToken;
+	
+	private List<String> tenantsName;
+	
+	private List<String> tenants;
 
 	/**
 	 * @param client
@@ -56,6 +69,8 @@ public class FilesClientFederatedKeystone extends FilesClientKeystone {
 			String password, String authUrl, String account,
 			int connectionTimeOut) {
 		super(client, username, password, authUrl, account, connectionTimeOut);
+		this.realms = new LinkedList<String>();
+		this.idps = new LinkedList<String>();
 	}
 
 	/**
@@ -108,7 +123,7 @@ public class FilesClientFederatedKeystone extends FilesClientKeystone {
 	public List<String> getRealmList(String spEndpoint)
 			throws IOException, Exception {
 		HttpPost httppost = new HttpPost(spEndpoint);
-
+		System.out.println(spEndpoint);
 		try {
 
 			// cria json sem conteudo e o insere no corpo (body) da requisicao
@@ -122,6 +137,7 @@ public class FilesClientFederatedKeystone extends FilesClientKeystone {
 			logger.debug("request: " + httppost.toString());
 
 			// vai tratar a resposta da requisição
+			//HttpClient clientComSSL = this.getHttpClientWithSSL(client);
 			HttpResponse resp = client.execute(httppost);
 
 			// transforma resposta em uma string contendo o json da resposta
@@ -132,12 +148,10 @@ public class FilesClientFederatedKeystone extends FilesClientKeystone {
 			// OBS.: realm=IDP
 			JSONArray realms = jsonResp.getJSONArray("realms");
 
-			LinkedList<String> idps = new LinkedList<String>();
-
 			for (int i = 0; i < realms.length(); ++i) {
 				JSONObject realm = realms.getJSONObject(i);
-				idps.add(realm.getString("name"));
-				// System.out.println("realm: "+realm.getString("name"));
+				this.realms.add(realm.toString());
+				this.idps.add(realm.getString("name"));
 			}
 			return idps;
 		} finally {
@@ -174,48 +188,53 @@ public class FilesClientFederatedKeystone extends FilesClientKeystone {
 	 */
 	public String[] getIdPRequest(String spEndpoint, String realm)
 			throws ClientProtocolException, IOException, JSONException {
+
 		String[] responses = new String[2];
-		HttpPost httppost = new HttpPost(spEndpoint);
+		HttpPost httpPost = new HttpPost(spEndpoint);
+		String selectedRealm = this.getSelectedRealm(realm);
 
 		try {
 
-			// cria json com crenciais para requisitar autenticação
-			StringEntity entity = new StringEntity("{\"realm\": {\"name\":\""
-					+ realm + "\"}}");
+			String json = "{\"realm\":"+ selectedRealm +"}";
+			System.out.println("Json to send: \n" + json);
+			
+			StringEntity entity = new StringEntity(json);
 
 			entity.setContentType("application/json");
-			httppost.setEntity(entity);
-			httppost.addHeader("Content-type", "application/json");
-			httppost.addHeader("X-Authentication-Type", "federated");
+			httpPost.setEntity(entity);
+			httpPost.addHeader("Content-type", "application/json");
+			httpPost.addHeader("X-Authentication-Type", "federated");
 
-			// vai tratar a resposta da requisição
-			HttpResponse requestResp = client.execute(httppost);
+			// vai tratar a resposta da requisi����o
+			HttpResponse resp = client.execute(httpPost);
 
 			// transforma resposta em uma string contendo o json da resposta
-			String responseAsString = httpEntityToString(requestResp
-					.getEntity());
-
+			String responseAsString = httpEntityToString(resp.getEntity());
+			System.out.println("Resposta idpRequest: \n" + responseAsString);
 			JSONObject jsonResp = new JSONObject(responseAsString);
 
 			responses[0] = jsonResp.getString("idpEndpoint");
 			responses[1] = jsonResp.getString("idpRequest");
-
-			logger.debug("idpEndpoint:\n" + responses[0]);
-
-			logger.debug("idpRequest:\n" + responses[1]);
-
+			
 			return responses;
 		} finally {
-			httppost.abort();
+			httpPost.abort();
 		}
 
 	}
 
 
 	
+	private String getSelectedRealm(String realm) {
+		for (String realmJson : this.getRealms()) {
+			if (realmJson.contains(realm))
+				return realmJson;
+		}
+		return null;
+	}
+
 	public String getIdPResponse(String idpEndpoint, String samlRequest)
-			throws WSTrustException, UnsupportedEncodingException,
-			DataFormatException, DecoderException {
+			throws WSTrustException, DataFormatException, DecoderException, IOException {
 
 		String entityID = getEntityID(samlRequest);
 
@@ -248,9 +267,10 @@ public class FilesClientFederatedKeystone extends FilesClientKeystone {
 			throws UnsupportedEncodingException, JSONException {
 
 		HttpPost postRequest = new HttpPost(getAuthenticationURL());
+		String selectedRealm = this.getSelectedRealm(idpName);
 
-		StringEntity entity = new StringEntity("{\"realm\":{\"name\":\""
-				+ idpName + "\"},\"idpResponse\":\"SAMLResponse="
+		StringEntity entity = new StringEntity("{\"realm\":"
+				+ selectedRealm + ", \"idpResponse\":\"SAMLResponse="
 				+ URLEncoder.encode(idpResponse, "UTF-8") + "\"}");
 
 		postRequest.setEntity(entity);
@@ -265,6 +285,18 @@ public class FilesClientFederatedKeystone extends FilesClientKeystone {
 			response = client.execute(postRequest);
 			String unscopedTokenJson = httpEntityToString(response.getEntity());
 
+			JSONObject json = new JSONObject(unscopedTokenJson);
+			this.setUnscopedToken(json.getString("unscopedToken"));
+			System.out.println("Unscoped Token Id: " + this.getUnscopedToken());
+			
+			JSONArray arrayTenants = json.getJSONArray("tenants");
+			this.tenantsName = new LinkedList<String>();
+			this.tenants = new LinkedList<String>();
+			for (int i = 0; i < arrayTenants.length(); i++){
+				this.tenantsName.add(arrayTenants.getJSONObject(i).getJSONObject("project").getString("name"));
+				this.tenants.add(arrayTenants.getJSONObject(i).getString("project"));
+			}
+				
 			return unscopedTokenJson;
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -274,29 +306,20 @@ public class FilesClientFederatedKeystone extends FilesClientKeystone {
 
 	}
 
-	public String getScopedToken(String unscopedTokenJson, String tenantFn)
+	public String getScopedToken(String unscopedToken, String tenantFn)
 			throws JSONException, UnsupportedEncodingException {
-		unscopedTokenJson.trim();
-		JSONObject SPResponse = new JSONObject(unscopedTokenJson);
-		String unscopedToken = SPResponse.getString("unscopedToken");
-		logger.debug("unscopedToken: " + unscopedToken);
-
 		String tenantId = "";
-		String tenantsArray = SPResponse.getString("tenants");
-		tenantsArray.trim();
-		System.out.println("Friendly name: " + tenantFn);
-		System.out.println("Tenants: " + tenantsArray);
-
-		JSONArray tenants = new JSONArray(tenantsArray);
-		for (int i = 0; i < tenants.length(); i++) {
-			JSONObject tenant = tenants.getJSONObject(i);
-			if (tenant.getString("friendlyName").equals(tenantFn)) { //No novo é project
-				logger.debug("-- " + tenant.getString("friendlyName"));
-				tenantId = tenant.getString("id");
+		for (String tenantJson : this.getTenants()) {
+			if (tenantJson.contains(tenantFn)){
+				JSONObject selectedTenant = new JSONObject(tenantJson);
+				tenantId = selectedTenant.getString("id");
 			}
 		}
 		
-		System.out.println("TenantID: " + tenantId);
+		logger.debug("unscopedToken: " + unscopedToken);
+
+		System.out.println("Tenant Friendly name: " + tenantFn);
+		System.out.println("Tenant id: " + tenantId);
 		
 		logger.debug("TenantID: " + tenantId);
 
@@ -388,26 +411,30 @@ public class FilesClientFederatedKeystone extends FilesClientKeystone {
 	}
 
 	private String getEntityID(String samlRequest)
-			throws UnsupportedEncodingException, DataFormatException,
-			DecoderException {
-		String saml = samlRequest.substring(12, samlRequest.length());
+			throws DataFormatException,
+			DecoderException, IOException {
+		
+		//TODO Confirm where this 13 comes from
+		int index = (samlRequest.startsWith("?")?13:12);
+		String saml = samlRequest.substring(index, samlRequest.length());
 		String samlDecodedURL = URLDecoder.decode(saml, "UTF-8");
+
 		Base64 decoder = new Base64();
 		byte[] decodeBytes = decoder.decode(samlDecodedURL);
 
 		Inflater inflater = new Inflater(true);
 		inflater.setInput(decodeBytes);
-		byte[] xmlMessageBytes = new byte[5000];
-		int resultLength = inflater.inflate(xmlMessageBytes);
 
-		if (!inflater.finished()) {
-			throw new RuntimeException("didn't allocate enough space to hold "
-					+ "decompressed data");
+		ByteArrayOutputStream outputStream = new ByteArrayOutputStream(decodeBytes.length);
+		byte[] buffer = new byte[1024];
+		while(!inflater.finished()) {
+			int count = inflater.inflate(buffer);
+			outputStream.write(buffer, 0, count);
 		}
+		outputStream.close();
+		byte[] inflatedMessage = outputStream.toByteArray();
 
-		inflater.end();
-
-		String decodedResponse = new String(xmlMessageBytes, 0, resultLength,
+		String decodedResponse = new String(inflatedMessage, 0, inflatedMessage.length,
 				"UTF-8");
 
 		String entityID = this
@@ -460,5 +487,54 @@ public class FilesClientFederatedKeystone extends FilesClientKeystone {
 			e.printStackTrace();
 			return null;
 		}
+	}
+	
+
+	public List<String> getRealms() {
+		return realms;
+	}
+
+	public void setRealms(List<String> realms) {
+		this.realms = realms;
+	}
+
+	public List<String> getIdps() {
+		return idps;
+	}
+
+	public void setIdps(List<String> idps) {
+		this.idps = idps;
+	}
+
+	public String getSamlResquest() {
+		return samlResquest;
+	}
+
+	public void setSamlResquest(String samlResquest) {
+		this.samlResquest = samlResquest;
+	}
+
+	public String getUnscopedToken() {
+		return unscopedToken;
+	}
+
+	public void setUnscopedToken(String unscopedToken) {
+		this.unscopedToken = unscopedToken;
+	}
+
+	public List<String> getTenantsName() {
+		return tenantsName;
+	}
+
+	public void setTenantsName(List<String> tenantsName) {
+		this.tenantsName = tenantsName;
+	}
+
+	public List<String> getTenants() {
+		return tenants;
+	}
+
+	public void setTenants(List<String> tenants) {
+		this.tenants = tenants;
 	}
 }
