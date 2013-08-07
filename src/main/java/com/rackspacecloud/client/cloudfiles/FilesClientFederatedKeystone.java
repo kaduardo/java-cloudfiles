@@ -50,6 +50,14 @@ public class FilesClientFederatedKeystone extends FilesClientKeystone {
 	private List<String> tenantsName;
 	
 	private List<String> tenants;
+	
+	private String selectedRealmJson;
+	
+	private boolean realmSelected;
+	
+	private boolean tenantSelected;
+	
+	private boolean validTenantId;
 
 	/**
 	 * @param client
@@ -191,46 +199,52 @@ public class FilesClientFederatedKeystone extends FilesClientKeystone {
 
 		String[] responses = new String[2];
 		HttpPost httpPost = new HttpPost(spEndpoint);
-		String selectedRealm = this.getSelectedRealm(realm);
+		boolean b = this.getJsonRealm(realm);
+		this.setRealmSelected(b);
+		
+		if (this.isRealmSelected()){
+			try {
+				String json = "{\"realm\":"+ this.selectedRealmJson +"}";
+				System.out.println("Json to send: \n" + json);
+				
+				StringEntity entity = new StringEntity(json);
 
-		try {
+				entity.setContentType("application/json");
+				httpPost.setEntity(entity);
+				httpPost.addHeader("Content-type", "application/json");
+				httpPost.addHeader("X-Authentication-Type", "federated");
 
-			String json = "{\"realm\":"+ selectedRealm +"}";
-			System.out.println("Json to send: \n" + json);
-			
-			StringEntity entity = new StringEntity(json);
+				// vai tratar a resposta da requisi����o
+				HttpResponse resp = client.execute(httpPost);
 
-			entity.setContentType("application/json");
-			httpPost.setEntity(entity);
-			httpPost.addHeader("Content-type", "application/json");
-			httpPost.addHeader("X-Authentication-Type", "federated");
+				// transforma resposta em uma string contendo o json da resposta
+				String responseAsString = httpEntityToString(resp.getEntity());
+				System.out.println("Resposta idpRequest: \n" + responseAsString);
+				JSONObject jsonResp = new JSONObject(responseAsString);
 
-			// vai tratar a resposta da requisi����o
-			HttpResponse resp = client.execute(httpPost);
-
-			// transforma resposta em uma string contendo o json da resposta
-			String responseAsString = httpEntityToString(resp.getEntity());
-			System.out.println("Resposta idpRequest: \n" + responseAsString);
-			JSONObject jsonResp = new JSONObject(responseAsString);
-
-			responses[0] = jsonResp.getString("idpEndpoint");
-			responses[1] = jsonResp.getString("idpRequest");
-			
-			return responses;
-		} finally {
-			httpPost.abort();
-		}
+				responses[0] = jsonResp.getString("idpEndpoint");
+				responses[1] = jsonResp.getString("idpRequest");
+				
+				return responses;
+			} finally {
+				httpPost.abort();
+			}
+		} else {
+			throw new IllegalStateException("You must choose a valid realm.");
+		}	
 
 	}
 
 
 	
-	private String getSelectedRealm(String realm) {
+	private boolean getJsonRealm(String realm) {
 		for (String realmJson : this.getRealms()) {
-			if (realmJson.contains(realm))
-				return realmJson;
+			if (realmJson.contains(realm)){
+				this.setSelectedRealm(realmJson);
+				return true;
+			}
 		}
-		return null;
+		return false;
 	}
 
 	public String getIdPResponse(String idpEndpoint, String samlRequest)
@@ -263,47 +277,52 @@ public class FilesClientFederatedKeystone extends FilesClientKeystone {
 	 * @throws UnsupportedEncodingException
 	 * @throws JSONException
 	 */
-	public String getUnscopedToken(String idpResponse, String idpName)
+	public String getUnscopedToken(String idpResponse, String realm)
 			throws UnsupportedEncodingException, JSONException {
 
 		HttpPost postRequest = new HttpPost(getAuthenticationURL());
-		String selectedRealm = this.getSelectedRealm(idpName);
+		boolean b = this.getJsonRealm(realm);
+		this.setRealmSelected(b);
 
-		StringEntity entity = new StringEntity("{\"realm\":"
-				+ selectedRealm + ", \"idpResponse\":\"SAMLResponse="
-				+ URLEncoder.encode(idpResponse, "UTF-8") + "\"}");
+		if (this.isRealmSelected()){
+			StringEntity entity = new StringEntity("{\"realm\":"
+					+ selectedRealmJson + ", \"idpResponse\":\"SAMLResponse="
+					+ URLEncoder.encode(idpResponse, "UTF-8") + "\"}");
 
-		postRequest.setEntity(entity);
+			postRequest.setEntity(entity);
 
-		entity.setContentType("application/json");
-		postRequest.setHeader("Content-Type", "application/json");
-		postRequest.setHeader("X-Authentication-Type", "federated");
+			entity.setContentType("application/json");
+			postRequest.setHeader("Content-Type", "application/json");
+			postRequest.setHeader("X-Authentication-Type", "federated");
 
-		HttpResponse response;
+			HttpResponse response;
 
-		try {
-			response = client.execute(postRequest);
-			String unscopedTokenJson = httpEntityToString(response.getEntity());
+			try {
+				response = client.execute(postRequest);
+				String unscopedTokenJson = httpEntityToString(response.getEntity());
 
-			JSONObject json = new JSONObject(unscopedTokenJson);
-			this.setUnscopedToken(json.getString("unscopedToken"));
-			System.out.println("Unscoped Token Id: " + this.getUnscopedToken());
-			
-			JSONArray arrayTenants = json.getJSONArray("tenants");
-			this.tenantsName = new LinkedList<String>();
-			this.tenants = new LinkedList<String>();
-			for (int i = 0; i < arrayTenants.length(); i++){
-				this.tenantsName.add(arrayTenants.getJSONObject(i).getJSONObject("project").getString("name"));
-				this.tenants.add(arrayTenants.getJSONObject(i).getString("project"));
-			}
+				JSONObject json = new JSONObject(unscopedTokenJson);
+				this.setUnscopedToken(json.getString("unscopedToken"));
+				System.out.println("Unscoped Token Id: " + this.getUnscopedToken());
 				
-			return unscopedTokenJson;
-		} catch (IOException e) {
-			e.printStackTrace();
+				JSONArray arrayTenants = json.getJSONArray("tenants");
+				this.tenantsName = new LinkedList<String>();
+				this.tenants = new LinkedList<String>();
+				for (int i = 0; i < arrayTenants.length(); i++){
+					this.tenantsName.add(arrayTenants.getJSONObject(i).getJSONObject("project").getString("name"));
+					this.tenants.add(arrayTenants.getJSONObject(i).getString("project"));
+				}
+					
+				return unscopedTokenJson;
+			} catch (IOException e) {
+				e.printStackTrace();
 
-			return "error";
-		}
-
+				return "error";
+			}
+		} else {
+			throw new IllegalStateException("You must choose a valid realm.");
+		}	
+		
 	}
 
 	public String getScopedToken(String unscopedToken, String tenantFn)
@@ -313,24 +332,31 @@ public class FilesClientFederatedKeystone extends FilesClientKeystone {
 			if (tenantJson.contains(tenantFn)){
 				JSONObject selectedTenant = new JSONObject(tenantJson);
 				tenantId = selectedTenant.getString("id");
+				this.setTenantSelected(true);
 			}
 		}
 		
-		logger.debug("unscopedToken: " + unscopedToken);
+		if (this.isTenantSelected()){
+			logger.debug("unscopedToken: " + unscopedToken);
 
-		System.out.println("Tenant Friendly name: " + tenantFn);
-		System.out.println("Tenant id: " + tenantId);
+			System.out.println("Tenant Friendly name: " + tenantFn);
+			System.out.println("Tenant id: " + tenantId);
+			
+			logger.debug("TenantID: " + tenantId);
+
+			String[] credentials = this.swapTokens(unscopedToken, tenantId);
+
+			logger.debug("token: " + credentials[0]);
+
+			System.out.println("StorageURL: " + credentials[1]);
+			setStorageURL(credentials[1]);
+
+			return credentials[0];
+		} else {
+			throw new IllegalStateException("You must choose a valid tenant name.");
+		}
 		
-		logger.debug("TenantID: " + tenantId);
-
-		String[] credentials = this.swapTokens(unscopedToken, tenantId);
-
-		logger.debug("token: " + credentials[0]);
-
-		System.out.println("StorageURL: " + credentials[1]);
-		setStorageURL(credentials[1]);
-
-		return credentials[0];
+		
 	}
 
 	/**
@@ -347,38 +373,47 @@ public class FilesClientFederatedKeystone extends FilesClientKeystone {
 	public String[] swapTokens(String unscopedToken, String tenantId)
 			throws UnsupportedEncodingException {
 
-		String[] credentials = { "error", "error" };
-		String data = "{\"auth\" : {\"token\" : {\"id\" : \"" + unscopedToken
-				+ "\"}, \"tenantId\" : \"" + tenantId + "\"}}";
-		
-		
-		System.out.println("swapTokens: \n"+
-				data);
-
-		System.out.println("URL: " + getAuthenticationURL());
-		
-		HttpPost postRequest = new HttpPost(getAuthenticationURL() + "/tokens");
-		StringEntity entity = new StringEntity(data);
-		entity.setContentType("application/json");
-		postRequest.setHeader("Content-Type", "application/json");
-		postRequest.setEntity(entity);
-	
-		try {
-			HttpResponse response = client.execute(postRequest);
-			String responseAsString = httpEntityToString(response.getEntity());
-			logger.debug("Scoped Token: " + responseAsString);
-			System.out.println("Scoped Token: " + responseAsString);
-			credentials = getAuthFromJSON(responseAsString);
-			return credentials;
-		} catch (ClientProtocolException e) {
-			logger.error("ClientProtocolException ------ ***", e);
-			e.printStackTrace();
-			return credentials;
-		} catch (IOException e) {
-			logger.error("IOException ------ ***", e);
-			e.printStackTrace();
-			return credentials;
+		for (String tenantJson : this.getTenants()) {
+			if (tenantJson.contains(tenantId)){
+				this.setValidTenantId(true);
+			}
 		}
+		
+		if (this.isValidTenantId()){
+			String[] credentials = { "error", "error" };
+			String data = "{\"auth\" : {\"token\" : {\"id\" : \"" + unscopedToken
+					+ "\"}, \"tenantId\" : \"" + tenantId + "\"}}";
+					
+			System.out.println("swapTokens: \n" + data);
+
+			System.out.println("URL: " + getAuthenticationURL());
+			
+			HttpPost postRequest = new HttpPost(getAuthenticationURL() + "/tokens");
+			StringEntity entity = new StringEntity(data);
+			entity.setContentType("application/json");
+			postRequest.setHeader("Content-Type", "application/json");
+			postRequest.setEntity(entity);
+		
+			try {
+				HttpResponse response = client.execute(postRequest);
+				String responseAsString = httpEntityToString(response.getEntity());
+				logger.debug("Scoped Token: " + responseAsString);
+				System.out.println("Scoped Token: " + responseAsString);
+				credentials = getAuthFromJSON(responseAsString);
+				return credentials;
+			} catch (ClientProtocolException e) {
+				logger.error("ClientProtocolException ------ ***", e);
+				e.printStackTrace();
+				return credentials;
+			} catch (IOException e) {
+				logger.error("IOException ------ ***", e);
+				e.printStackTrace();
+				return credentials;
+			}
+		} else {
+			throw new IllegalStateException("Valid Tentant Id.");
+		}
+			
 	}
 
 	/**
@@ -536,5 +571,37 @@ public class FilesClientFederatedKeystone extends FilesClientKeystone {
 
 	public void setTenants(List<String> tenants) {
 		this.tenants = tenants;
+	}
+
+	public String getSelectedRealm() {
+		return selectedRealmJson;
+	}
+
+	public void setSelectedRealm(String selectedRealm) {
+		this.selectedRealmJson = selectedRealm;
+	}
+
+	public boolean isRealmSelected() {
+		return realmSelected;
+	}
+
+	public void setRealmSelected(boolean realmSelected) {
+		this.realmSelected = realmSelected;
+	}
+
+	public boolean isTenantSelected() {
+		return tenantSelected;
+	}
+
+	public void setTenantSelected(boolean tenantSelected) {
+		this.tenantSelected = tenantSelected;
+	}
+
+	public boolean isValidTenantId() {
+		return validTenantId;
+	}
+
+	public void setValidTenantId(boolean validTenantId) {
+		this.validTenantId = validTenantId;
 	}
 }
