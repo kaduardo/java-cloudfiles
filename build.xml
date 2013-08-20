@@ -67,6 +67,12 @@
 		</javac>
 		<copy file="${src}/com/rackspacecloud/client/cloudfiles/MIME.types" 
 		      todir="${classes}/com/rackspacecloud/client/cloudfiles" />
+		<copy file="${src}/META-INF/rnpsts.xml" 
+		      todir="${classes}/META-INF" />
+		<copy file="${src}/META-INF/wsit-client.xml" 
+		      todir="${classes}/META-INF" />
+		<copy file="rnpStsKeystore.jks" 
+		      todir="${classes}/META-INF" />
 		<jar jarfile="${dist}/${project.name}.jar" basedir="${classes}"/>
 	</target>
 
