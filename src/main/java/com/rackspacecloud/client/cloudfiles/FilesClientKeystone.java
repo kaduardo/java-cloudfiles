@@ -63,16 +63,18 @@ public class FilesClientKeystone extends FilesClient {
      
 	@Override
 	public void authenticate()  throws IOException, HttpException {
+		HttpPost method = null;
+		try 
+        {
 		//TODO confirm if the "/tokens" must be included here
-		HttpPost method = new HttpPost(this.getAuthenticationURL()+ TOKENS);
+		method = new HttpPost(this.getAuthenticationURL()+ TOKENS);
         method.getParams().setIntParameter("http.socket.timeout", this.getConnectionTimeOut());
-        
         StringEntity entity = new StringEntity(getJSONBody());
-        entity.setContentType("application/json");
+        
+		entity.setContentType("application/json");
         method.setEntity(entity);
 
-        try 
-        {
+     
         	FilesResponse2 response = new FilesResponse2(client.execute(method));
         
         	if (response.loginSuccess()) {
@@ -94,6 +96,12 @@ public class FilesClientKeystone extends FilesClient {
         		throw new FilesAuthorizationException("Login failed", response.getResponseHeaders(), response.getStatusLine());
         	}
         }
+		catch(FilesAuthorizationException ex){
+			throw ex;
+		}
+		catch(Exception ex){
+			throw new FilesAuthorizationException("It is not possible to connect to the server for authentication");
+		}
         finally
         {
         	method.abort();
@@ -120,7 +128,7 @@ public class FilesClientKeystone extends FilesClient {
             return obj.toString();
         } catch (JSONException ex) {
             logger.error("Error when construction authentication body.");
-        }
+		}
 
  
         return null;

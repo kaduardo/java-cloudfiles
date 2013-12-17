@@ -33,6 +33,11 @@ public class FilesException extends HttpException
 	{
 		super(message, cause);
 	}
+		public FilesException(String message)
+	{
+		super(message);
+
+	}
 
 	/**
 	 * @return The HTTP headers returned by the server

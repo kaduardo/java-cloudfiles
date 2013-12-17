@@ -47,6 +47,8 @@ public class FilesClientFederatedKeystone extends FilesClientKeystone {
 	
 	private String unscopedToken;
 	
+	private String scopedToken;
+	
 	private List<String> tenantsName;
 	
 	private List<String> tenants;
@@ -58,6 +60,8 @@ public class FilesClientFederatedKeystone extends FilesClientKeystone {
 	private boolean tenantSelected;
 	
 	private boolean validTenantId;
+	
+	private boolean validScopedToken = false;
 
 	/**
 	 * @param client
@@ -97,17 +101,23 @@ public class FilesClientFederatedKeystone extends FilesClientKeystone {
 			String authUrl, String account, final int connectionTimeOut) {
 		super(username, password, authUrl, account, connectionTimeOut);
 	}
+	public void setAuthToken(String authToken) {
+		this.authToken = authToken;
+	}
 
-	@Override
+	/*@Override
 	public boolean login() throws IOException, HttpException {
 		throw new IllegalStateException("This method can not be called in a federated authentication.");
-	}
+	}*/
+	
 	
 	@Override
-	public void authenticate()  throws IOException, HttpException {
-		throw new IllegalStateException("This method can not be called in a federated authentication.");
+	public boolean login() throws IOException, HttpException
+	{
+		return this.isLoggedin();
 	}
-
+	
+	
 	/**
 	 * Creates a POST request to the Service Provide (federated keystone),
 	 * requesting the IDP list from the authenticationURL informed in the
@@ -162,7 +172,11 @@ public class FilesClientFederatedKeystone extends FilesClientKeystone {
 				this.idps.add(realm.getString("name"));
 			}
 			return idps;
-		} finally {
+		} 
+		catch(Exception ex){
+			throw new IOException("Error then get Real List");
+		}
+		finally {
 			httppost.abort();
 		}
 	}
@@ -226,7 +240,11 @@ public class FilesClientFederatedKeystone extends FilesClientKeystone {
 				responses[1] = jsonResp.getString("idpRequest");
 				
 				return responses;
-			} finally {
+			}
+			catch(Exception ex){
+				throw new IllegalStateException("Error then Requeting IdP");
+			}		
+			finally {
 				httpPost.abort();
 			}
 		} else {
@@ -316,8 +334,8 @@ public class FilesClientFederatedKeystone extends FilesClientKeystone {
 				return unscopedTokenJson;
 			} catch (IOException e) {
 				e.printStackTrace();
-
-				return "error";
+				throw new IllegalStateException("Error then Requeting Unscoped Token");
+		//		return "error";
 			}
 		} else {
 			throw new IllegalStateException("You must choose a valid realm.");
@@ -337,6 +355,7 @@ public class FilesClientFederatedKeystone extends FilesClientKeystone {
 		}
 		
 		if (this.isTenantSelected()){
+		try{
 			logger.debug("unscopedToken: " + unscopedToken);
 
 			System.out.println("Tenant Friendly name: " + tenantFn);
@@ -350,8 +369,13 @@ public class FilesClientFederatedKeystone extends FilesClientKeystone {
 
 			System.out.println("StorageURL: " + credentials[1]);
 			setStorageURL(credentials[1]);
-
+			setAuthToken(credentials[0]);	
+			this.validScopedToken = true;
 			return credentials[0];
+			}
+			catch(Exception ex){
+				throw new IllegalStateException("Error then get scoped token");
+			}
 		} else {
 			throw new IllegalStateException("You must choose a valid tenant name.");
 		}
@@ -404,14 +428,16 @@ public class FilesClientFederatedKeystone extends FilesClientKeystone {
 			} catch (ClientProtocolException e) {
 				logger.error("ClientProtocolException ------ ***", e);
 				e.printStackTrace();
-				return credentials;
+				throw new IllegalStateException("Error during SwapTokens");
+			//	return credentials;
 			} catch (IOException e) {
 				logger.error("IOException ------ ***", e);
 				e.printStackTrace();
-				return credentials;
+				throw new IllegalStateException("Error during SwapTokens Generical");
+				//return credentials;
 			}
 		} else {
-			throw new IllegalStateException("Valid Tentant Id.");
+			throw new IllegalStateException("Invalid Tentant Id.");
 		}
 			
 	}
@@ -604,4 +630,9 @@ public class FilesClientFederatedKeystone extends FilesClientKeystone {
 	public void setValidTenantId(boolean validTenantId) {
 		this.validTenantId = validTenantId;
 	}
+	
+	public boolean getValidScopedToken() {
+		return validScopedToken;
+	}
+	//
 }

@@ -22,4 +22,8 @@ public class FilesAuthorizationException extends FilesException
 	{
 		super(message, httpHeaders, httpStatusLine);
 	}
+		public FilesAuthorizationException(String message)
+	{
+		super(message);
+	}
 }
